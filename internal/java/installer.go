@@ -2,11 +2,7 @@ package java
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"runtime"
-
-	"github.com/alexinslc/chunk/internal/ui"
 )
 
 type JavaInstaller struct {

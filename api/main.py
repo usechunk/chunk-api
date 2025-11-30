@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
@@ -7,8 +7,8 @@ import uvicorn
 import os
 from pathlib import Path
 
-from api.routers import auth, modpacks, search, versions, upload
-from api.middleware.ratelimit import limiter, rate_limit_exceeded_handler
+from routers import auth, modpacks, search, versions, upload
+from middleware.ratelimit import limiter, rate_limit_exceeded_handler
 
 app = FastAPI(
     title="ChunkHub API",

@@ -255,7 +255,7 @@ func (s *SmokeTest) PrintReport(report *TestReport) {
 	for _, result := range report.Results {
 		icon := "✓"
 		if !result.Passed {
-			icon := "✗"
+			icon = "✗"
 		}
 		fmt.Printf("%s %-25s %s\n", icon, result.Name+":", result.Message)
 	}

@@ -84,22 +84,24 @@ func (d *VersionDiffer) CompareModpacks(oldManifest, newManifest *config.ChunkMa
 	)
 	
 	oldMods := make(map[string]ModInfo)
-	for _, mod := range oldManifest.Mods {
-		oldMods[mod.ID] = ModInfo{
-			Name:    mod.Name,
-			Version: mod.Version,
-			ID:      mod.ID,
-		}
-	}
+	// TODO: Implement mod comparison once ChunkManifest has Mods field
+	// for _, mod := range oldManifest.Mods {
+	// 	oldMods[mod.ID] = ModInfo{
+	// 		Name:    mod.Name,
+	// 		Version: mod.Version,
+	// 		ID:      mod.ID,
+	// 	}
+	// }
 	
 	newMods := make(map[string]ModInfo)
-	for _, mod := range newManifest.Mods {
-		newMods[mod.ID] = ModInfo{
-			Name:    mod.Name,
-			Version: mod.Version,
-			ID:      mod.ID,
-		}
-	}
+	// TODO: Implement mod comparison once ChunkManifest has Mods field
+	// for _, mod := range newManifest.Mods {
+	// 	newMods[mod.ID] = ModInfo{
+	// 		Name:    mod.Name,
+	// 		Version: mod.Version,
+	// 		ID:      mod.ID,
+	// 	}
+	// }
 	
 	for id, newMod := range newMods {
 		if oldMod, exists := oldMods[id]; exists {

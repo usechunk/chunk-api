@@ -148,7 +148,7 @@ func ValidateMCVersion(version string) error {
 		return fmt.Errorf("minecraft version cannot be empty")
 	}
 	
-	validVersionPattern := `^\d+\.\d+(\.\d+)?$`
+	_ = `^\d+\.\d+(\.\d+)?$`
 	matched := false
 	
 	for i := 0; i < len(version); i++ {

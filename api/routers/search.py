@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from api.database import get_db
-from api.models.modpack import Modpack
-from api.middleware.ratelimit import limiter
+from database import get_db
+from models.modpack import Modpack
+from middleware.ratelimit import limiter
 
 router = APIRouter(prefix="/search", tags=["search"])
 

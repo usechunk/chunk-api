@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from api.database import get_db
-from api.models.modpack import Modpack, ModpackVersion, User
-from api.routers.auth import get_current_active_user
+from database import get_db
+from models.modpack import Modpack, ModpackVersion, User
+from routers.auth import get_current_active_user
 
 router = APIRouter(prefix="/modpacks/{slug}/versions", tags=["versions"])
 
