@@ -161,10 +161,6 @@ See [tasks](tasks/tasks-prd-modpack-server-toolkit.md) for detailed progress.
 
 Contributions are welcome! Please read our contributing guidelines before submitting PRs.
 
-## License
-
-MIT License - see LICENSE file for details.
-
 ## Support
 
 - Issues: [GitHub Issues](https://github.com/alexinslc/chunk/issues)
