@@ -1,171 +1,390 @@
 # Chunk - Modpack Server Toolkit
 
-A universal, open-source CLI and registry system that simplifies modded Minecraft server deployment. Deploy modded Minecraft servers with a single command—no more hours of manual mod installation.
+> **A universal CLI for deploying modded Minecraft servers in seconds, not hours.**
 
-## Overview
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)](go.mod)
+[![Python Version](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python)](api/pyproject.toml)
 
-Chunk is a Homebrew-style tool that makes deploying modded Minecraft servers as simple as:
+Chunk is a Homebrew-style tool that transforms modded Minecraft server deployment from a tedious multi-hour process into a single command. No more manual mod downloads, no more config headaches, no more version mismatches.
 
 ```bash
-chunk install <modpack>
+chunk install atm9
+# That's it. Your server is ready to start.
 ```
 
-It solves the time investment and technical complexity of modded server setup by:
-- Automatically detecting and installing the correct mod loader (Forge/Fabric/NeoForge)
-- Downloading all required server-side mods
-- Excluding client-only mods
-- Generating configurations and start scripts
-- Preserving world data and configs during upgrades
+## 🎯 Why Chunk?
 
-## Features
+**The Problem:**
+Setting up modded Minecraft servers is painful. Hours of downloading mods individually, figuring out which are server-side, dealing with version incompatibilities, configuring memory settings, and repeating this nightmare for every update.
 
-- **Multiple Modpack Sources**: ChunkHub registry, GitHub repositories, Modrinth, or local files
-- **Universal Compatibility**: Works on any Linux environment (VMs, cloud, home servers)
-- **Smart Java Detection**: Detects existing Java installations and validates versions
-- **Data Preservation**: Safely upgrades modpacks while preserving worlds and player data
-- **Creator-Friendly**: Simple `.chunk.json` specification for modpack creators
-- **Beginner-Friendly**: Clear error messages and optional guided installation
+**The Solution:**
+Chunk handles all of it. One command to install, one command to upgrade, automatic Java detection, automatic mod filtering, automatic everything.
 
-## Quick Start
+## ✨ Features
 
-### Prerequisites
+### 🚀 Multiple Installation Sources
+- **ChunkHub Registry** - Curated, verified modpacks
+- **GitHub Repos** - `chunk install alexinslc/my-modpack`
+- **Modrinth** - Direct .mrpack file support
+- **Local Files** - Import existing modpacks
 
-- Go 1.21+ (for CLI development)
-- Python 3.11+ with uv (for API development)
-- Linux environment (for deployment)
+### 🎮 Universal Loader Support
+Automatically installs and configures:
+- Forge
+- Fabric
+- NeoForge
 
-### Installation
+### ☕ Smart Java Management
+- Detects existing Java installations
+- Validates version compatibility
+- Guides you through installation if needed
+- Supports Java 8, 11, 17, and 21
 
+### 💾 Data Preservation
+Never lose your worlds again:
+- Automatic backups before upgrades
+- Preserves world data, configs, and player data
+- Rollback support if something goes wrong
+- Merge strategies for config conflicts
+
+### 🔍 Version Management
+- Compare versions before upgrading: `chunk diff atm9`
+- See exactly what mods changed
+- Get warnings about breaking changes
+- View known working versions
+
+### 🛡️ Validation & Safety
+- Smoke tests after installation
+- File structure validation
+- Permission checks
+- Auto-fix common issues
+
+## 📦 Installation
+
+### Quick Install (macOS/Linux)
 ```bash
-# Clone the repository
+curl -sSL https://chunkhub.io/install.sh | bash
+```
+
+### Quick Install (Windows)
+```powershell
+irm https://chunkhub.io/install.ps1 | iex
+```
+
+### From Source
+```bash
 git clone https://github.com/alexinslc/chunk.git
 cd chunk
-
-# Set up development environment
-make dev
-
-# Build the CLI
-make build
+make install
 ```
 
-### Usage
+### Using Go
+```bash
+go install github.com/alexinslc/chunk/cmd/chunk@latest
+```
+
+## 🚀 Quick Start
+
+### Install a Modpack
 
 ```bash
-# Search for modpacks
-chunk search <query>
-
-# Install a modpack from GitHub
-chunk install alexinslc/my-cool-mod
-
-# Install from ChunkHub registry
+# From ChunkHub registry
 chunk install atm9
 
-# Install to specific directory
-chunk install <modpack> --dir /path/to/server
+# From GitHub (shorthand)
+chunk install alexinslc/my-cool-modpack
 
-# Upgrade existing installation
-chunk upgrade <modpack>
+# From Modrinth
+chunk install ./modpack.mrpack
 
-# Compare versions
-chunk diff <modpack>
+# To specific directory
+chunk install atm9 --dir /opt/minecraft
 ```
 
-## Development
-
-### Project Structure
-
-```
-chunk/
-├── cmd/chunk/          # CLI entry point and commands
-├── internal/           # Internal packages
-│   ├── sources/        # Modpack source integrations
-│   ├── converter/      # Modpack-to-server conversion
-│   ├── java/           # Java detection and validation
-│   ├── upgrade/        # Data preservation and upgrades
-│   └── validation/     # Smoke tests and validation
-├── api/                # FastAPI registry backend
-│   ├── routers/        # API endpoints
-│   ├── models/         # Data models
-│   └── main.py         # FastAPI app
-├── docs/               # Documentation
-└── tasks/              # PRD and task lists
-```
-
-### Makefile Commands
+### Search for Modpacks
 
 ```bash
-make help       # Show available commands
-make build      # Build CLI binary
-make test       # Run all tests
-make run-api    # Start FastAPI server
-make run-cli    # Run CLI (use ARGS='...')
-make clean      # Clean build artifacts
-make install    # Install dependencies
-make dev        # Set up development environment
+# Search all modpacks
+chunk search
+
+# Search with query
+chunk search "all the mods"
 ```
 
-### Running the API
+### Upgrade Existing Server
 
 ```bash
-make run-api
-# API will be available at http://localhost:8000
-# API docs at http://localhost:8000/docs
+# Upgrade to latest version
+chunk upgrade atm9
+
+# Preview changes first
+chunk diff atm9
+
+# Upgrade specific directory
+chunk upgrade atm9 --dir /opt/minecraft
 ```
 
-### Running the CLI
+### Complete Example
 
 ```bash
-# During development
-make run-cli ARGS="search modpack"
+# 1. Install a modpack
+chunk install atm9 --dir ./my-server
 
-# After building
-./bin/chunk search modpack
+# 2. Server is ready - just start it
+cd my-server
+./start.sh
+
+# 3. Later, upgrade to new version
+chunk upgrade atm9 --dir ./my-server
+
+# 4. Check what changed
+chunk diff atm9
 ```
 
-## Architecture
+## 📖 Documentation
 
-- **CLI**: Go-based, using Cobra framework for command routing
-- **Registry API**: Python FastAPI backend with SQLAlchemy ORM
-- **Database**: SQLite for development, PostgreSQL for production
-- **Package Manager**: uv for Python dependencies
+- **[CLI Usage Guide](docs/CLI_USAGE.md)** - Complete command reference
+- **[API Reference](docs/API_REFERENCE.md)** - ChunkHub API documentation
+- **[.chunk.json Spec](docs/chunk-json-spec.md)** - Modpack manifest format
 
-## For Modpack Creators
+## 🎨 For Modpack Creators
 
-Add a `.chunk.json` file to your repository root:
+Make your modpack installable with Chunk by adding a `.chunk.json` to your repository:
 
 ```json
 {
-  "name": "My Cool Modpack",
+  "schema_version": "1.0.0",
+  "name": "My Awesome Modpack",
+  "version": "1.0.0",
   "mc_version": "1.20.1",
   "loader": "forge",
-  "recommended_ram_gb": 8
+  "loader_version": "47.2.0",
+  "java_version": 17,
+  "recommended_ram_gb": 8,
+  "mods": [
+    {
+      "id": "jei",
+      "name": "Just Enough Items",
+      "version": "15.2.0.27",
+      "side": "both"
+    }
+  ]
 }
 ```
 
-See [.chunk.json specification](docs/chunk-json-spec.md) for full documentation.
+Users can then install with:
+```bash
+chunk install yourusername/your-modpack
+```
 
-## Roadmap
+See the **[.chunk.json specification](docs/chunk-json-spec.md)** for complete documentation.
 
-- [x] Project structure and setup
-- [ ] Core CLI framework
-- [ ] Modpack source integrations
-- [ ] Conversion engine
-- [ ] Registry API backend
-- [ ] Java management
-- [ ] Data preservation system
-- [ ] Validation and testing
+## 🏗️ Architecture
 
-See [tasks](tasks/tasks-prd-modpack-server-toolkit.md) for detailed progress.
+### Tech Stack
 
-## Contributing
+**CLI:**
+- **Language:** Go 1.21+
+- **CLI Framework:** Cobra
+- **HTTP Client:** Native net/http
 
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+**Registry API:**
+- **Framework:** FastAPI (Python 3.11+)
+- **ORM:** SQLAlchemy
+- **Database:** PostgreSQL (production), SQLite (dev)
+- **Auth:** JWT tokens
+- **Package Manager:** uv
 
-## Support
+## 🛠️ Development
 
-- Issues: [GitHub Issues](https://github.com/alexinslc/chunk/issues)
-- Documentation: [docs/](docs/)
+### Prerequisites
 
----
+- **Go 1.21+** for CLI development
+- **Python 3.11+** for API development
+- **uv** - Python package manager ([install](https://docs.astral.sh/uv/))
+- **Make** - Build automation
+- **Docker** (optional) - For API deployment
 
-*Chunk: Because Minecraft's world is built from chunks, and so is your server deployment.*
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/alexinslc/chunk.git
+cd chunk
+
+# Install all dependencies
+make dev
+
+# Build CLI
+make build
+
+# Run tests
+make test
+```
+
+### Available Make Commands
+
+```bash
+make help       # Show all available commands
+make build      # Build CLI binary to bin/chunk
+make test       # Run Go tests
+make lint       # Run linters
+make run-api    # Start FastAPI server (dev mode)
+make run-cli    # Run CLI with ARGS='install atm9'
+make clean      # Remove build artifacts
+make install    # Install chunk CLI to $GOPATH/bin
+make dev        # Full dev environment setup
+```
+
+### Running the CLI (Development)
+
+```bash
+# Build and run
+make build
+./bin/chunk install atm9
+
+# Or use make run-cli
+make run-cli ARGS="search modpack"
+```
+
+### Running the API (Development)
+
+```bash
+# Start development server with auto-reload
+make run-api
+
+# API will be available at:
+# - Main API: http://localhost:8000
+# - Swagger Docs: http://localhost:8000/docs
+# - ReDoc: http://localhost:8000/redoc
+```
+
+### Testing
+
+```bash
+# Run all tests
+make test
+
+# Run specific package tests
+go test ./internal/sources/...
+
+# Run with coverage
+go test -cover ./...
+```
+
+## 🚢 Deployment
+
+### CLI Distribution
+
+Build for multiple platforms:
+
+```bash
+# Build for current platform
+make build
+
+# Build for Linux
+GOOS=linux GOARCH=amd64 go build -o bin/chunk-linux ./cmd/chunk
+
+# Build for macOS
+GOOS=darwin GOARCH=amd64 go build -o bin/chunk-macos ./cmd/chunk
+
+# Build for Windows
+GOOS=windows GOARCH=amd64 go build -o bin/chunk.exe ./cmd/chunk
+```
+
+### API Deployment (Docker)
+
+```bash
+cd api
+
+# Development
+docker-compose up -d
+
+# Production
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Environment Variables
+
+Create `api/.env`:
+
+```bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/chunkhub
+SECRET_KEY=your-secret-key-here
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=524288000
+```
+
+## 📋 Roadmap
+
+### ✅ Completed (v1.0)
+
+- [x] Project structure and development environment
+- [x] Core CLI framework with Cobra
+- [x] Modpack source integrations (ChunkHub, GitHub, Modrinth, local)
+- [x] Conversion engine (Forge/Fabric/NeoForge)
+- [x] Registry API backend (FastAPI + PostgreSQL)
+- [x] Java detection and validation
+- [x] Data preservation and upgrade system
+- [x] Validation, smoke testing, and error handling
+- [x] Complete documentation
+
+### 🚀 Planned (v1.1+)
+
+- [ ] CurseForge modpack support
+- [ ] Fleet mode (manage multiple servers)
+- [ ] Web UI for ChunkHub registry
+- [ ] Auto-update checking for CLI
+- [ ] Plugin system for custom sources
+- [ ] Pterodactyl panel integration
+- [ ] Windows GUI wrapper
+- [ ] Automated mod compatibility checking
+
+See [tasks/tasks-prd-modpack-server-toolkit.md](tasks/tasks-prd-modpack-server-toolkit.md) for detailed progress.
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and add tests
+4. **Run tests**: `make test`
+5. **Commit**: `git commit -m 'Add amazing feature'`
+6. **Push**: `git push origin feature/amazing-feature`
+7. **Open a Pull Request**
+
+### Contribution Ideas
+
+- Add support for new modpack sources
+- Improve error messages and UX
+- Write tests
+- Improve documentation
+- Report bugs
+- Suggest features
+
+## 💬 Support & Community
+
+- **Documentation:** [docs/](docs/)
+- **Issues:** [GitHub Issues](https://github.com/alexinslc/chunk/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/alexinslc/chunk/discussions)
+- **Discord:** [Join our Discord](https://discord.gg/chunk) (coming soon)
+
+## 🙏 Acknowledgments
+
+- Inspired by Homebrew's simplicity
+- Built for the Minecraft modding community
+- Thanks to all modpack creators who make this ecosystem amazing
+
+## 📊 Project Status
+
+**Current Version:** v1.0.0 (MVP Complete)
+
+- ✅ Core functionality implemented
+- ✅ Multiple source integrations working
+- ✅ Data preservation system complete
+- ✅ Comprehensive documentation
+- 🚧 Community testing phase
+- 🚧 Building ChunkHub modpack registry
+
