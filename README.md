@@ -1,8 +1,8 @@
 # Chunk API - ChunkHub Registry Backend
 
-> **FastAPI-based backend for the ChunkHub modpack registry**
+> **Part of the [Chunk ecosystem](https://github.com/usechunk/chunk-docs) - see [Architecture](https://github.com/usechunk/chunk-docs/blob/main/ARCHITECTURE.md)**
 
-This is the API backend for [Chunk](https://github.com/usechunk/chunk-cli), providing the ChunkHub registry service for discovering, publishing, and managing Minecraft modpack metadata.
+FastAPI-based backend for the ChunkHub modpack registry, providing the API service for discovering, publishing, and managing Minecraft modpack metadata.
 
 ## 🏗️ Tech Stack
 
@@ -69,11 +69,13 @@ uv run pytest --cov=.
 
 ## 📚 API Documentation
 
-See the [API Reference](docs/API_REFERENCE.md) for complete endpoint documentation.
+See the [Chunk API Reference](https://github.com/usechunk/chunk-docs/blob/main/API.md) for complete endpoint documentation.
 
 ## 🔗 Related Projects
 
-- [chunk-cli](https://github.com/usechunk/chunk-cli) - The CLI tool that uses this API
+- [chunk-docs](https://github.com/usechunk/chunk-docs) - Central documentation
+- [chunk-cli](https://github.com/usechunk/chunk-cli) - CLI tool
+- [chunk-app](https://github.com/usechunk/chunk-app) - Web interface
 
 ## 📄 License
 
