@@ -8,6 +8,15 @@ import {
 } from '../services/meilisearch.js';
 
 /**
+ * Logger function for indexing errors
+ * Uses console since this module may be used outside of Fastify context
+ */
+function logDebug(message: string, error?: unknown): void {
+  // eslint-disable-next-line no-console
+  console.debug(message, error ?? '');
+}
+
+/**
  * Convert a database modpack record to a search document
  */
 export function modpackToSearchDocument(
@@ -65,8 +74,9 @@ export async function indexProjectById(projectId: number): Promise<void> {
     // If project is not found or not published, try to remove it from index
     try {
       await removeProjectFromIndex(projectId);
-    } catch {
-      // Ignore errors when removing non-existent documents
+    } catch (error) {
+      // Expected when document doesn't exist, but could indicate other issues
+      logDebug(`Could not remove project ${projectId} from index:`, error);
     }
     return;
   }
@@ -99,8 +109,9 @@ export async function updateProjectInIndex(projectId: number): Promise<void> {
   if (!modpack.isPublished) {
     try {
       await removeProjectFromIndex(projectId);
-    } catch {
-      // Ignore errors when removing non-existent documents
+    } catch (error) {
+      // Expected when document doesn't exist, but could indicate other issues
+      logDebug(`Could not remove unpublished project ${projectId} from index:`, error);
     }
     return;
   }
@@ -116,8 +127,9 @@ export async function updateProjectInIndex(projectId: number): Promise<void> {
 export async function removeProjectById(projectId: number): Promise<void> {
   try {
     await removeProjectFromIndex(projectId);
-  } catch {
-    // Ignore errors when removing non-existent documents
+  } catch (error) {
+    // Expected when document doesn't exist, but could indicate other issues
+    logDebug(`Could not remove project ${projectId} from index:`, error);
   }
 }
 

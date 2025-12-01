@@ -14,6 +14,8 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   RATE_LIMIT_TIMEWINDOW: z.string().default('1 minute'),
   MEILISEARCH_HOST: z.string().url().default('http://localhost:7700'),
+  // MEILISEARCH_KEY is optional for development without authentication,
+  // but required for production environments where Meilisearch has auth enabled.
   MEILISEARCH_KEY: z.string().optional(),
 });
 

@@ -101,6 +101,7 @@ export async function initializeProjectsIndex(): Promise<void> {
   ]);
 
   // Configure ranking rules (relevance + downloads)
+  // downloads:desc is placed early to give download count more weight in relevance
   await index.updateRankingRules([
     'words',
     'typo',
@@ -125,6 +126,15 @@ if (require.main === module) {
     }
   })();
 }
+/**
+ * Logger function for Meilisearch errors
+ * Uses console since this module may be used outside of Fastify context
+ */
+function logError(message: string, error: unknown): void {
+  // eslint-disable-next-line no-console
+  console.error(message, error);
+}
+
 /**
  * Index a single project document
  */
@@ -205,7 +215,8 @@ export async function checkMeiliHealth(): Promise<boolean> {
     const client = getMeiliClient();
     await client.health();
     return true;
-  } catch {
+  } catch (error) {
+    logError('Meilisearch health check failed:', error);
     return false;
   }
 }
@@ -226,7 +237,8 @@ export async function getIndexStats(): Promise<{
       isIndexing: stats.isIndexing,
       fieldDistribution: stats.fieldDistribution ?? {},
     };
-  } catch {
+  } catch (error) {
+    logError('Failed to get index stats:', error);
     return null;
   }
 }
