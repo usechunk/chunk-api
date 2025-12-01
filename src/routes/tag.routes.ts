@@ -30,9 +30,10 @@ export async function tagRoutes(server: FastifyInstance) {
     const where: { type?: 'LOADER' | 'CATEGORY' | 'GAME_VERSION' | 'CUSTOM' } = {};
     if (type) {
       const parsed = tagTypeEnum.safeParse(type.toUpperCase());
-      if (parsed.success) {
-        where.type = parsed.data;
+      if (!parsed.success) {
+        throw new AppError(400, 'Invalid tag type. Must be one of: LOADER, CATEGORY, GAME_VERSION, CUSTOM');
       }
+      where.type = parsed.data;
     }
 
     const tags = await prisma.tag.findMany({
