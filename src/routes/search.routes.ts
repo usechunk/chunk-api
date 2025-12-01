@@ -5,11 +5,12 @@ import { projectTypeEnum } from '../schemas/modpack.schema.js';
 
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { q, mcVersion, loader, type, page = 1, limit = 20 } = request.query as {
+    const { q, mcVersion, loader, type, tags, page = 1, limit = 20 } = request.query as {
       q?: string;
       mcVersion?: string;
       loader?: string;
       type?: string;
+      tags?: string;
       page?: number;
       limit?: number;
     };
@@ -35,6 +36,18 @@ export async function searchRoutes(server: FastifyInstance) {
       }
     }
 
+    // Filter by tags (comma-separated slugs)
+    if (tags) {
+      const tagSlugs = tags.split(',').map((t) => t.trim().toLowerCase());
+      where.tags = {
+        some: {
+          tag: {
+            slug: { in: tagSlugs },
+          },
+        },
+      };
+    }
+
     const [modpacks, total] = await Promise.all([
       prisma.modpack.findMany({
         where,
@@ -47,14 +60,25 @@ export async function searchRoutes(server: FastifyInstance) {
               username: true,
             },
           },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
         },
         orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
       }),
       prisma.modpack.count({ where }),
     ]);
 
+    // Transform tags to flat array
+    const transformedModpacks = modpacks.map((modpack) => ({
+      ...modpack,
+      tags: modpack.tags.map((pt) => pt.tag),
+    }));
+
     return reply.send({
-      data: modpacks,
+      data: transformedModpacks,
       pagination: {
         page: Number(page),
         limit: Number(limit),

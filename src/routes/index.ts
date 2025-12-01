@@ -5,6 +5,7 @@ import { versionRoutes } from './version.routes.js';
 import { searchRoutes } from './search.routes.js';
 import { projectRoutes } from './project.routes.js';
 import { uploadRoutes } from './upload.routes.js';
+import { tagRoutes } from './tag.routes.js';
 
 export async function registerRoutes(server: FastifyInstance) {
   server.get('/', async (request, reply) => {
@@ -25,4 +26,5 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(searchRoutes);
   await server.register(projectRoutes);
   await server.register(uploadRoutes);
+  await server.register(tagRoutes);
 }

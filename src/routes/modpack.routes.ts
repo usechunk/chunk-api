@@ -11,12 +11,13 @@ interface ModpackParams {
 
 export async function modpackRoutes(server: FastifyInstance) {
   server.get('/modpacks', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { page = 1, limit = 20, mcVersion, loader, type } = request.query as {
+    const { page = 1, limit = 20, mcVersion, loader, type, tags } = request.query as {
       page?: number;
       limit?: number;
       mcVersion?: string;
       loader?: string;
       type?: string;
+      tags?: string;
     };
 
     const skip = (Number(page) - 1) * Number(limit);
@@ -32,6 +33,18 @@ export async function modpackRoutes(server: FastifyInstance) {
       }
     }
 
+    // Filter by tags (comma-separated slugs)
+    if (tags) {
+      const tagSlugs = tags.split(',').map((t) => t.trim().toLowerCase());
+      where.tags = {
+        some: {
+          tag: {
+            slug: { in: tagSlugs },
+          },
+        },
+      };
+    }
+
     const [modpacks, total] = await Promise.all([
       prisma.modpack.findMany({
         where,
@@ -44,14 +57,25 @@ export async function modpackRoutes(server: FastifyInstance) {
               username: true,
             },
           },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.modpack.count({ where }),
     ]);
 
+    // Transform tags to flat array
+    const transformedModpacks = modpacks.map((modpack) => ({
+      ...modpack,
+      tags: modpack.tags.map((pt) => pt.tag),
+    }));
+
     return reply.send({
-      data: modpacks,
+      data: transformedModpacks,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -79,6 +103,11 @@ export async function modpackRoutes(server: FastifyInstance) {
             orderBy: { createdAt: 'desc' },
             take: 10,
           },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
         },
       });
 
@@ -93,7 +122,13 @@ export async function modpackRoutes(server: FastifyInstance) {
         }
       }
 
-      return reply.send(modpack);
+      // Transform tags to flat array
+      const transformedModpack = {
+        ...modpack,
+        tags: modpack.tags.map((pt) => pt.tag),
+      };
+
+      return reply.send(transformedModpack);
     }
   );
 
