@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  username        String    @unique @db.VarChar(50)
+  email           String    @unique @db.VarChar(255)
+  hashedPassword  String    @map("hashed_password") @db.VarChar(255)
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  
+  modpacks        Modpack[]
+
+  @@index([username])
+  @@index([email])
+  @@map("users")
+}
+
+model Modpack {
+  id                Int       @id @default(autoincrement())
+  name              String    @db.VarChar(255)
+  slug              String    @unique @db.VarChar(255)
+  description       String?   @db.Text
+  mcVersion         String    @map("mc_version") @db.VarChar(20)
+  loader            String    @db.VarChar(20)
+  loaderVersion     String?   @map("loader_version") @db.VarChar(50)
+  recommendedRamGb  Int       @default(4) @map("recommended_ram_gb")
+  downloads         Int       @default(0)
+  authorId          Int       @map("author_id")
+  isPublished       Boolean   @default(false) @map("is_published")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  
+  author            User      @relation(fields: [authorId], references: [id])
+  versions          ModpackVersion[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([mcVersion])
+  @@index([loader])
+  @@index([authorId])
+  @@map("modpacks")
+}
+
+model ModpackVersion {
+  id              Int       @id @default(autoincrement())
+  modpackId       Int       @map("modpack_id")
+  version         String    @db.VarChar(50)
+  mcVersion       String    @map("mc_version") @db.VarChar(20)
+  loader          String    @db.VarChar(20)
+  loaderVersion   String?   @map("loader_version") @db.VarChar(50)
+  changelog       String?   @db.Text
+  downloadUrl     String?   @map("download_url") @db.VarChar(512)
+  fileSize        Int?      @map("file_size")
+  downloads       Int       @default(0)
+  isStable        Boolean   @default(true) @map("is_stable")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  
+  modpack         Modpack   @relation(fields: [modpackId], references: [id], onDelete: Cascade)
+
+  @@index([modpackId])
+  @@map("modpack_versions")
+}
