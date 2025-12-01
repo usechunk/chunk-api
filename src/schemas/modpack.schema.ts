@@ -12,10 +12,14 @@ export const projectTypeEnum = z.enum([
 
 export type ProjectType = z.infer<typeof projectTypeEnum>;
 
-// License validation schema that validates against SPDX identifiers
+// License validation schema that validates against SPDX identifiers.
+// The maximum length is set to 255 characters to accommodate standard SPDX identifiers
+// and custom references (e.g., "LicenseRef-MyCompany-PropietaryLicense-v2.0").
+// See: https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/#custom-license-identifiers
+// If your custom license identifiers may exceed this length, please contact the maintainers.
 export const licenseIdSchema = z
   .string()
-  .max(100)
+  .max(255)
   .refine((val) => isValidSPDXLicense(val), {
     message: 'Invalid SPDX license identifier',
   });
