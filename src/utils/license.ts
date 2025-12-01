@@ -172,7 +172,7 @@ export function getAllCategories(): string[] {
  */
 export function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
   modpack: T
-): T & { licenseName: string | null } {
+): T & { licenseName: string | null; licenseUrl: string | null } {
   const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
   return {
     ...modpack,
