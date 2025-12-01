@@ -104,11 +104,11 @@ export async function initializeProjectsIndex(): Promise<void> {
   await index.updateRankingRules([
     'words',
     'typo',
+    'downloads:desc',
     'proximity',
     'attribute',
     'sort',
     'exactness',
-    'downloads:desc',
   ]);
 }
 
