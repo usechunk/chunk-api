@@ -169,52 +169,54 @@ export async function tagRoutes(server: FastifyInstance) {
       const { slug } = request.params;
       const body = projectTagsSchema.parse(request.body);
 
-      const modpack = await prisma.modpack.findUnique({
-        where: { slug },
-      });
+      const updatedModpack = await prisma.$transaction(async (tx) => {
+        const modpack = await tx.modpack.findUnique({
+          where: { slug },
+        });
 
-      if (!modpack) {
-        throw new AppError(404, 'Modpack not found');
-      }
+        if (!modpack) {
+          throw new AppError(404, 'Modpack not found');
+        }
 
-      if (modpack.authorId !== payload.sub) {
-        throw new AppError(403, 'Not authorized to modify this modpack');
-      }
+        if (modpack.authorId !== payload.sub) {
+          throw new AppError(403, 'Not authorized to modify this modpack');
+        }
 
-      // Verify all tags exist
-      const tags = await prisma.tag.findMany({
-        where: { id: { in: body.tagIds } },
-      });
+        // Verify all tags exist
+        const tags = await tx.tag.findMany({
+          where: { id: { in: body.tagIds } },
+        });
 
-      if (tags.length !== body.tagIds.length) {
-        throw new AppError(400, 'One or more tags not found');
-      }
+        if (tags.length !== body.tagIds.length) {
+          throw new AppError(400, 'One or more tags not found');
+        }
 
-      // Add tags (ignore duplicates)
-      await prisma.projectTag.createMany({
-        data: body.tagIds.map((tagId) => ({
-          projectId: modpack.id,
-          tagId,
-        })),
-        skipDuplicates: true,
-      });
+        // Add tags (ignore duplicates)
+        await tx.projectTag.createMany({
+          data: body.tagIds.map((tagId) => ({
+            projectId: modpack.id,
+            tagId,
+          })),
+          skipDuplicates: true,
+        });
 
-      // Return updated modpack with tags
-      const updatedModpack = await prisma.modpack.findUnique({
-        where: { slug },
-        include: {
-          tags: {
-            include: {
-              tag: true,
+        // Return updated modpack with tags
+        return tx.modpack.findUnique({
+          where: { slug },
+          include: {
+            tags: {
+              include: {
+                tag: true,
+              },
+            },
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
             },
           },
-          author: {
-            select: {
-              id: true,
-              username: true,
-            },
-          },
-        },
+        });
       });
 
       return reply.send(updatedModpack);
