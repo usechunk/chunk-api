@@ -90,7 +90,7 @@ model ModpackVersion {
 
 model Tag {
   id        Int          @id @default(autoincrement())
-  name      String       @db.VarChar(100)
+  name      String       @unique @db.VarChar(100)
   slug      String       @unique @db.VarChar(100)
   type      TagType
   color     String?      @db.VarChar(7)

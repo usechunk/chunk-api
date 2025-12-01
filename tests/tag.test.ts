@@ -160,6 +160,6 @@ describe('parseTagSlugs utility', () => {
   });
 
   it('should handle empty string', () => {
-    expect(parseTagSlugs('')).toEqual(['']);
+    expect(parseTagSlugs('')).toEqual([]);
   });
 });

@@ -24,12 +24,13 @@ CREATE TABLE "project_tags" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "tags_name_key" ON "tags"("name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "tags_slug_key" ON "tags"("slug");
 
 -- CreateIndex
 CREATE INDEX "tags_type_idx" ON "tags"("type");
-
--- CreateIndex
 
 -- CreateIndex
 CREATE INDEX "project_tags_project_id_idx" ON "project_tags"("project_id");
