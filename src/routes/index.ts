@@ -7,6 +7,8 @@ import { advancedSearchRoutes } from './advancedSearch.routes.js';
 import { projectRoutes } from './project.routes.js';
 import { uploadRoutes } from './upload.routes.js';
 import { tagRoutes } from './tag.routes.js';
+import { oauthRoutes } from './oauth.routes.js';
+import { patRoutes } from './pat.routes.js';
 
 export async function registerRoutes(server: FastifyInstance) {
   server.get('/', async () => {
@@ -29,4 +31,6 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(projectRoutes);
   await server.register(uploadRoutes);
   await server.register(tagRoutes);
+  await server.register(oauthRoutes);
+  await server.register(patRoutes);
 }
