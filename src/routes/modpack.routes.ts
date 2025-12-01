@@ -4,25 +4,11 @@ import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
 import { parseTagSlugs } from '../utils/tags.js';
-import { getLicenseDetails, getLicensesByCategory } from '../utils/license.js';
+import { getLicensesByCategory, addLicenseInfo } from '../utils/license.js';
 import { modpackCreateSchema, modpackUpdateSchema, projectTypeEnum } from '../schemas/modpack.schema.js';
 
 interface ModpackParams {
   slug: string;
-}
-
-/**
- * Transform modpack to include license info
- */
-function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
-  modpack: T
-): T & { licenseName: string | null } {
-  const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
-  return {
-    ...modpack,
-    licenseName: licenseDetails?.name ?? null,
-    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
-  };
 }
 
 export async function modpackRoutes(server: FastifyInstance) {

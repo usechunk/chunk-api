@@ -166,3 +166,17 @@ export function getAllLicenseIds(): string[] {
 export function getAllCategories(): string[] {
   return Object.keys(LICENSE_CATEGORIES);
 }
+
+/**
+ * Transform a modpack object to include license info (licenseName and resolved licenseUrl)
+ */
+export function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
+  modpack: T
+): T & { licenseName: string | null } {
+  const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
+  return {
+    ...modpack,
+    licenseName: licenseDetails?.name ?? null,
+    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
+  };
+}

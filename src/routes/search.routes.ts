@@ -3,21 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
 import { parseTagSlugs } from '../utils/tags.js';
-import { getLicenseDetails, getLicensesByCategory } from '../utils/license.js';
-
-/**
- * Transform modpack to include license info
- */
-function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
-  modpack: T
-): T & { licenseName: string | null } {
-  const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
-  return {
-    ...modpack,
-    licenseName: licenseDetails?.name ?? null,
-    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
-  };
-}
+import { getLicensesByCategory, addLicenseInfo } from '../utils/license.js';
 
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {

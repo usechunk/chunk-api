@@ -6,6 +6,7 @@ import {
   getLicenseCategory,
   getAllLicenseIds,
   getAllCategories,
+  addLicenseInfo,
   SPDX_LICENSES,
   LICENSE_CATEGORIES,
 } from '../src/utils/license.js';
@@ -123,6 +124,60 @@ describe('License Utilities', () => {
     it('should match LICENSE_CATEGORIES keys', () => {
       const categories = getAllCategories();
       expect(categories).toEqual(Object.keys(LICENSE_CATEGORIES));
+    });
+  });
+
+  describe('addLicenseInfo', () => {
+    it('should add license name and URL for valid license', () => {
+      const modpack = {
+        id: 1,
+        name: 'Test Modpack',
+        licenseId: 'MIT',
+        licenseUrl: null,
+      };
+
+      const result = addLicenseInfo(modpack);
+      expect(result.licenseName).toBe('MIT License');
+      expect(result.licenseUrl).toBe('https://opensource.org/licenses/MIT');
+    });
+
+    it('should use custom license URL if provided', () => {
+      const modpack = {
+        id: 1,
+        name: 'Test Modpack',
+        licenseId: 'MIT',
+        licenseUrl: 'https://example.com/custom-license',
+      };
+
+      const result = addLicenseInfo(modpack);
+      expect(result.licenseName).toBe('MIT License');
+      expect(result.licenseUrl).toBe('https://example.com/custom-license');
+    });
+
+    it('should handle null license ID', () => {
+      const modpack = {
+        id: 1,
+        name: 'Test Modpack',
+        licenseId: null,
+        licenseUrl: null,
+      };
+
+      const result = addLicenseInfo(modpack);
+      expect(result.licenseName).toBeNull();
+      expect(result.licenseUrl).toBeNull();
+    });
+
+    it('should handle ARR license with custom URL', () => {
+      const modpack = {
+        id: 1,
+        name: 'Test Modpack',
+        licenseId: 'ARR',
+        licenseUrl: 'https://example.com/terms',
+      };
+
+      const result = addLicenseInfo(modpack);
+      expect(result.licenseName).toBe('All Rights Reserved');
+      expect(result.licenseUrl).toBe('https://example.com/terms');
     });
   });
 });
