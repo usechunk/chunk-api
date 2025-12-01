@@ -112,6 +112,19 @@ export async function initializeProjectsIndex(): Promise<void> {
   ]);
 }
 
+// If this module is run directly, initialize the Meilisearch projects index
+if (require.main === module) {
+  (async () => {
+    try {
+      await initializeProjectsIndex();
+      // eslint-disable-next-line no-console
+      console.info('Meilisearch projects index initialized');
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to initialize Meilisearch index - search may not work correctly', error);
+    }
+  })();
+}
 /**
  * Index a single project document
  */
