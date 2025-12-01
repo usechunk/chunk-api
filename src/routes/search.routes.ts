@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
+import { parseTagSlugs } from '../utils/tags.js';
 
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -38,7 +39,7 @@ export async function searchRoutes(server: FastifyInstance) {
 
     // Filter by tags (comma-separated slugs)
     if (tags) {
-      const tagSlugs = tags.split(',').map((t) => t.trim().toLowerCase());
+      const tagSlugs = parseTagSlugs(tags);
       where.tags = {
         some: {
           tag: {

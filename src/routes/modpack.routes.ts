@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
+import { parseTagSlugs } from '../utils/tags.js';
 import { modpackCreateSchema, modpackUpdateSchema, projectTypeEnum } from '../schemas/modpack.schema.js';
 
 interface ModpackParams {
@@ -35,7 +36,7 @@ export async function modpackRoutes(server: FastifyInstance) {
 
     // Filter by tags (comma-separated slugs)
     if (tags) {
-      const tagSlugs = tags.split(',').map((t) => t.trim().toLowerCase());
+      const tagSlugs = parseTagSlugs(tags);
       where.tags = {
         some: {
           tag: {

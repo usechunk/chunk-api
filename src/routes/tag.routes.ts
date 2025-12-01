@@ -122,7 +122,7 @@ export async function tagRoutes(server: FastifyInstance) {
       const updatedTag = await prisma.tag.update({
         where: { id: tagId },
         data: {
-          ...(body.name && { name: body.name }),
+          ...(body.name !== undefined && { name: body.name }),
           ...(body.color !== undefined && { color: body.color }),
           ...(body.icon !== undefined && { icon: body.icon }),
         },

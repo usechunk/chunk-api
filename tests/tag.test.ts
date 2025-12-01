@@ -5,6 +5,7 @@ import {
   tagUpdateSchema,
   projectTagsSchema,
 } from '../src/schemas/tag.schema.js';
+import { parseTagSlugs } from '../src/utils/tags.js';
 
 describe('Tag Schema', () => {
   describe('tagTypeEnum', () => {
@@ -138,5 +139,27 @@ describe('Tag Schema', () => {
       const result = projectTagsSchema.parse(data);
       expect(result.tagIds).toEqual([1]);
     });
+  });
+});
+
+describe('parseTagSlugs utility', () => {
+  it('should parse comma-separated tag slugs', () => {
+    expect(parseTagSlugs('forge,magic,1.20.1')).toEqual(['forge', 'magic', '1.20.1']);
+  });
+
+  it('should convert to lowercase', () => {
+    expect(parseTagSlugs('FORGE,Magic,ADVENTURE')).toEqual(['forge', 'magic', 'adventure']);
+  });
+
+  it('should trim whitespace', () => {
+    expect(parseTagSlugs('forge , magic , 1.20.1')).toEqual(['forge', 'magic', '1.20.1']);
+  });
+
+  it('should handle single tag', () => {
+    expect(parseTagSlugs('forge')).toEqual(['forge']);
+  });
+
+  it('should handle empty string', () => {
+    expect(parseTagSlugs('')).toEqual(['']);
   });
 });
