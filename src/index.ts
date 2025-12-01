@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import { config } from './config.js';
 import { registerPlugins } from './plugins/index.js';
 import { registerRoutes } from './routes/index.js';
+import { initializeProjectsIndex } from './services/meilisearch.js';
 
 const server = fastify({
   logger: {
@@ -20,6 +21,11 @@ const server = fastify({
 
 await registerPlugins(server);
 await registerRoutes(server);
+
+// Initialize Meilisearch index settings (non-blocking)
+initializeProjectsIndex()
+  .then(() => server.log.info('Meilisearch index initialized'))
+  .catch((error) => server.log.warn(error, 'Failed to initialize Meilisearch index - search may not work correctly'));
 
 const start = async () => {
   try {
