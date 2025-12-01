@@ -42,7 +42,7 @@ export const modpackUpdateSchema = z.object({
   recommendedRamGb: z.number().int().positive().optional(),
   isPublished: z.boolean().optional(),
   licenseId: licenseIdSchema.optional(),
-  licenseUrl: z.string().url().max(512).optional().nullable(),
+  licenseUrl: z.string().url().max(512).optional(),
 });
 
 export const modpackResponseSchema = z.object({
