@@ -3,12 +3,13 @@ import { authRoutes } from './auth.routes.js';
 import { modpackRoutes } from './modpack.routes.js';
 import { versionRoutes } from './version.routes.js';
 import { searchRoutes } from './search.routes.js';
+import { advancedSearchRoutes } from './advancedSearch.routes.js';
 import { projectRoutes } from './project.routes.js';
 import { uploadRoutes } from './upload.routes.js';
 import { tagRoutes } from './tag.routes.js';
 
 export async function registerRoutes(server: FastifyInstance) {
-  server.get('/', async (request, reply) => {
+  server.get('/', async () => {
     return {
       name: 'ChunkHub API',
       version: '0.1.0',
@@ -16,7 +17,7 @@ export async function registerRoutes(server: FastifyInstance) {
     };
   });
 
-  server.get('/health', async (request, reply) => {
+  server.get('/health', async () => {
     return { status: 'healthy' };
   });
 
@@ -24,6 +25,7 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(modpackRoutes);
   await server.register(versionRoutes);
   await server.register(searchRoutes);
+  await server.register(advancedSearchRoutes);
   await server.register(projectRoutes);
   await server.register(uploadRoutes);
   await server.register(tagRoutes);

@@ -5,6 +5,7 @@ import { AppError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
 import { parseTagSlugs } from '../utils/tags.js';
 import { getLicensesByCategory, addLicenseInfo } from '../utils/license.js';
+import { indexProjectById, updateProjectInIndex, removeProjectById } from '../utils/indexing.js';
 import { modpackCreateSchema, modpackUpdateSchema, projectTypeEnum } from '../schemas/modpack.schema.js';
 
 interface ModpackParams {
@@ -197,6 +198,12 @@ export async function modpackRoutes(server: FastifyInstance) {
         },
       });
 
+      // Index the project in search (async, non-blocking)
+      // Note: Projects are only indexed when published
+      indexProjectById(modpack.id).catch((err) => {
+        server.log.error(err, 'Failed to index project in search');
+      });
+
       return reply.code(201).send(addLicenseInfo(modpack));
     }
   );
@@ -249,6 +256,11 @@ export async function modpackRoutes(server: FastifyInstance) {
         },
       });
 
+      // Update the project in search index (async, non-blocking)
+      updateProjectInIndex(updatedModpack.id).catch((err) => {
+        server.log.error(err, 'Failed to update project in search index');
+      });
+
       return reply.send(addLicenseInfo(updatedModpack));
     }
   );
@@ -274,6 +286,11 @@ export async function modpackRoutes(server: FastifyInstance) {
 
       await prisma.modpack.delete({
         where: { slug },
+      });
+
+      // Remove the project from search index (async, non-blocking)
+      removeProjectById(modpack.id).catch((err) => {
+        server.log.error(err, 'Failed to remove project from search index');
       });
 
       return reply.code(204).send();

@@ -21,7 +21,7 @@ export async function registerPlugins(server: FastifyInstance) {
   await server.register(rateLimit, {
     max: config.RATE_LIMIT_MAX,
     timeWindow: config.RATE_LIMIT_TIMEWINDOW,
-    errorResponseBuilder: (req, context) => ({
+    errorResponseBuilder: (_req, context) => ({
       statusCode: 429,
       error: 'Too Many Requests',
       message: `Rate limit exceeded. Retry after ${context.after}`,

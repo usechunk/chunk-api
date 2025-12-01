@@ -13,6 +13,8 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().default('*'),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   RATE_LIMIT_TIMEWINDOW: z.string().default('1 minute'),
+  MEILISEARCH_HOST: z.string().url().default('http://localhost:7700'),
+  MEILISEARCH_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

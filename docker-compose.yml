@@ -17,6 +17,21 @@ services:
       timeout: 5s
       retries: 5
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY:-masterKey}
+      MEILI_ENV: ${NODE_ENV:-development}
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -28,6 +43,8 @@ services:
       UPLOAD_DIR: /app/uploads
       API_HOST: 0.0.0.0
       API_PORT: 8000
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_KEY: ${MEILISEARCH_KEY:-masterKey}
     volumes:
       - ./uploads:/app/uploads
     ports:
@@ -35,8 +52,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     restart: unless-stopped
     command: sh -c "npx prisma migrate deploy && node dist/index.js"
 
 volumes:
   postgres_data:
+  meilisearch_data:
