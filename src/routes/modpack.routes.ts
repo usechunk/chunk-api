@@ -37,13 +37,15 @@ export async function modpackRoutes(server: FastifyInstance) {
     // Filter by tags (comma-separated slugs)
     if (tags) {
       const tagSlugs = parseTagSlugs(tags);
-      where.tags = {
-        some: {
-          tag: {
-            slug: { in: tagSlugs },
+      if (tagSlugs.length > 0) {
+        where.tags = {
+          some: {
+            tag: {
+              slug: { in: tagSlugs },
+            },
           },
-        },
-      };
+        };
+      }
     }
 
     const [modpacks, total] = await Promise.all([
