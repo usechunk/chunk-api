@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { Prisma, ProjectType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
 
@@ -31,7 +31,7 @@ export async function searchRoutes(server: FastifyInstance) {
     if (type) {
       const parsed = projectTypeEnum.safeParse(type.toUpperCase());
       if (parsed.success) {
-        where.projectType = parsed.data as ProjectType;
+        where.projectType = parsed.data;
       }
     }
 

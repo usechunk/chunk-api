@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { ProjectType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
@@ -22,18 +22,13 @@ export async function modpackRoutes(server: FastifyInstance) {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: {
-      isPublished: boolean;
-      mcVersion?: string;
-      loader?: string;
-      projectType?: ProjectType;
-    } = { isPublished: true };
+    const where: Prisma.ModpackWhereInput = { isPublished: true };
     if (mcVersion) where.mcVersion = mcVersion;
     if (loader) where.loader = loader;
     if (type) {
       const parsed = projectTypeEnum.safeParse(type.toUpperCase());
       if (parsed.success) {
-        where.projectType = parsed.data as ProjectType;
+        where.projectType = parsed.data;
       }
     }
 
@@ -124,7 +119,7 @@ export async function modpackRoutes(server: FastifyInstance) {
           name: body.name,
           slug,
           description: body.description,
-          projectType: body.projectType as ProjectType,
+          projectType: body.projectType,
           mcVersion: body.mcVersion,
           loader: body.loader,
           loaderVersion: body.loaderVersion,
@@ -165,23 +160,13 @@ export async function modpackRoutes(server: FastifyInstance) {
         throw new AppError(403, 'Not authorized to update this modpack');
       }
 
-      const updateData: {
-        name?: string;
-        slug?: string;
-        description?: string;
-        projectType?: ProjectType;
-        mcVersion?: string;
-        loader?: string;
-        loaderVersion?: string;
-        recommendedRamGb?: number;
-        isPublished?: boolean;
-      } = {};
+      const updateData: Prisma.ModpackUpdateInput = {};
       if (body.name) {
         updateData.name = body.name;
         updateData.slug = generateSlug(body.name);
       }
       if (body.description !== undefined) updateData.description = body.description;
-      if (body.projectType) updateData.projectType = body.projectType as ProjectType;
+      if (body.projectType) updateData.projectType = body.projectType;
       if (body.mcVersion) updateData.mcVersion = body.mcVersion;
       if (body.loader) updateData.loader = body.loader;
       if (body.loaderVersion !== undefined) updateData.loaderVersion = body.loaderVersion;
