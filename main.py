@@ -7,7 +7,7 @@ import uvicorn
 import os
 from pathlib import Path
 
-from routers import auth, modpacks, search, versions, upload
+from routers import auth, modpacks, search, versions, upload, projects
 from middleware.ratelimit import limiter, rate_limit_exceeded_handler
 
 app = FastAPI(
@@ -36,6 +36,7 @@ app.include_router(modpacks.router)
 app.include_router(search.router)
 app.include_router(versions.router)
 app.include_router(upload.router)
+app.include_router(projects.router)
 
 @app.get("/")
 @limiter.limit("100/minute")
