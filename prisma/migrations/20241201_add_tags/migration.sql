@@ -30,7 +30,6 @@ CREATE UNIQUE INDEX "tags_slug_key" ON "tags"("slug");
 CREATE INDEX "tags_type_idx" ON "tags"("type");
 
 -- CreateIndex
-CREATE INDEX "tags_slug_idx" ON "tags"("slug");
 
 -- CreateIndex
 CREATE INDEX "project_tags_project_id_idx" ON "project_tags"("project_id");
