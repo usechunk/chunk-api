@@ -3,15 +3,18 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
 import { parseTagSlugs } from '../utils/tags.js';
+import { getLicensesByCategory, addLicenseInfo } from '../utils/license.js';
 
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { q, mcVersion, loader, type, tags, page = 1, limit = 20 } = request.query as {
+    const { q, mcVersion, loader, type, tags, license, licenseCategory, page = 1, limit = 20 } = request.query as {
       q?: string;
       mcVersion?: string;
       loader?: string;
       type?: string;
       tags?: string;
+      license?: string;
+      licenseCategory?: string;
       page?: number;
       limit?: number;
     };
@@ -39,6 +42,18 @@ export async function searchRoutes(server: FastifyInstance) {
       if (parsed.success) {
         where.projectType = parsed.data;
       }
+    }
+
+    // Filter by license category (permissive, copyleft, etc.)
+    // Note: licenseCategory takes precedence over license if both are provided
+    if (licenseCategory) {
+      const licensesInCategory = getLicensesByCategory(licenseCategory);
+      if (licensesInCategory.length > 0) {
+        where.licenseId = { in: licensesInCategory };
+      }
+    } else if (license) {
+      // Filter by specific license (only if licenseCategory is not provided)
+      where.licenseId = license;
     }
 
     // Filter by tags (comma-separated slugs)
@@ -79,11 +94,13 @@ export async function searchRoutes(server: FastifyInstance) {
       prisma.modpack.count({ where }),
     ]);
 
-    // Transform tags to flat array
-    const transformedModpacks = modpacks.map((modpack) => ({
-      ...modpack,
-      tags: modpack.tags.map((pt) => pt.tag),
-    }));
+    // Transform tags to flat array and add license info
+    const transformedModpacks = modpacks.map((modpack) => 
+      addLicenseInfo({
+        ...modpack,
+        tags: modpack.tags.map((pt) => pt.tag),
+      })
+    );
 
     return reply.send({
       data: transformedModpacks,

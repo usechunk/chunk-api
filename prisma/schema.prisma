@@ -52,6 +52,8 @@ model Modpack {
   downloads         Int         @default(0)
   authorId          Int         @map("author_id")
   isPublished       Boolean     @default(false) @map("is_published")
+  licenseId         String?     @map("license_id") @db.VarChar(100)
+  licenseUrl        String?     @map("license_url") @db.VarChar(512)
   createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
   
@@ -65,6 +67,7 @@ model Modpack {
   @@index([loader])
   @@index([authorId])
   @@index([projectType])
+  @@index([licenseId])
   @@map("modpacks")
 }
 

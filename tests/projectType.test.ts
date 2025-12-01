@@ -65,6 +65,74 @@ describe('Project Type Schema', () => {
       };
       expect(() => modpackCreateSchema.parse(data)).toThrow();
     });
+
+    it('should accept valid SPDX license IDs', () => {
+      const data = {
+        name: 'Test Modpack',
+        mcVersion: '1.20.1',
+        loader: 'forge',
+        licenseId: 'MIT',
+      };
+      const result = modpackCreateSchema.parse(data);
+      expect(result.licenseId).toBe('MIT');
+    });
+
+    it('should reject invalid license IDs', () => {
+      const data = {
+        name: 'Test Modpack',
+        mcVersion: '1.20.1',
+        loader: 'forge',
+        licenseId: 'INVALID-LICENSE',
+      };
+      expect(() => modpackCreateSchema.parse(data)).toThrow();
+    });
+
+    it('should accept optional license fields being omitted', () => {
+      const data = {
+        name: 'Test Modpack',
+        mcVersion: '1.20.1',
+        loader: 'forge',
+      };
+      const result = modpackCreateSchema.parse(data);
+      expect(result.licenseId).toBeUndefined();
+      expect(result.licenseUrl).toBeUndefined();
+    });
+
+    it('should accept valid license URL', () => {
+      const data = {
+        name: 'Test Modpack',
+        mcVersion: '1.20.1',
+        loader: 'forge',
+        licenseId: 'LicenseRef-Custom',
+        licenseUrl: 'https://example.com/my-license',
+      };
+      const result = modpackCreateSchema.parse(data);
+      expect(result.licenseUrl).toBe('https://example.com/my-license');
+    });
+
+    it('should reject invalid license URL format', () => {
+      const data = {
+        name: 'Test Modpack',
+        mcVersion: '1.20.1',
+        loader: 'forge',
+        licenseId: 'LicenseRef-Custom',
+        licenseUrl: 'not-a-valid-url',
+      };
+      expect(() => modpackCreateSchema.parse(data)).toThrow();
+    });
+
+    it('should accept licenseId with licenseUrl override', () => {
+      const data = {
+        name: 'Test Modpack',
+        mcVersion: '1.20.1',
+        loader: 'forge',
+        licenseId: 'MIT',
+        licenseUrl: 'https://example.com/custom-mit-license',
+      };
+      const result = modpackCreateSchema.parse(data);
+      expect(result.licenseId).toBe('MIT');
+      expect(result.licenseUrl).toBe('https://example.com/custom-mit-license');
+    });
   });
 
   describe('modpackUpdateSchema', () => {
@@ -82,6 +150,23 @@ describe('Project Type Schema', () => {
     it('should reject invalid projectType in update', () => {
       const data = { projectType: 'INVALID' };
       expect(() => modpackUpdateSchema.parse(data)).toThrow();
+    });
+
+    it('should accept licenseId update', () => {
+      const data = { licenseId: 'Apache-2.0' };
+      const result = modpackUpdateSchema.parse(data);
+      expect(result.licenseId).toBe('Apache-2.0');
+    });
+
+    it('should reject invalid licenseId in update', () => {
+      const data = { licenseId: 'INVALID-LICENSE' };
+      expect(() => modpackUpdateSchema.parse(data)).toThrow();
+    });
+
+    it('should accept licenseUrl update', () => {
+      const data = { licenseUrl: 'https://example.com/license' };
+      const result = modpackUpdateSchema.parse(data);
+      expect(result.licenseUrl).toBe('https://example.com/license');
     });
   });
 });

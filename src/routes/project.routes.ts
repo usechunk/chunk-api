@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
+import { addLicenseInfo } from '../utils/license.js';
 
 interface ProjectParams {
   username: string;
@@ -52,7 +53,10 @@ export async function projectRoutes(server: FastifyInstance) {
         orderBy: { createdAt: 'desc' },
       });
 
-      return reply.send(modpacks);
+      // Add license info to each modpack
+      const transformedModpacks = modpacks.map(addLicenseInfo);
+
+      return reply.send(transformedModpacks);
     }
   );
 }
