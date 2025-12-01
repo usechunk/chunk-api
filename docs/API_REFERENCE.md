@@ -2,7 +2,17 @@
 
 ## Overview
 
-The ChunkHub API provides a registry for modpack metadata, versioning, and distribution.
+The ChunkHub API provides a registry for project metadata, versioning, and distribution. It supports multiple project types including mods, modpacks, resource packs, shaders, plugins, and datapacks.
+
+## Project Types
+
+The API supports the following project types:
+- `MOD` - Individual modifications
+- `MODPACK` - Collections of mods (default)
+- `RESOURCEPACK` - Texture and resource packs
+- `SHADER` - Shader packs
+- `PLUGIN` - Server plugins
+- `DATAPACK` - Data packs
 
 ## Base URL
 
@@ -44,35 +54,66 @@ Authorization: Bearer eyJ...
 
 ## Endpoints
 
-### Search Modpacks
+### Search Projects
 
 ```bash
-GET /search?q=<query>&mc_version=<version>&loader=<loader>
+GET /search?q=<query>&mc_version=<version>&loader=<loader>&type=<type>
 ```
 
 **Query Parameters:**
-- `q` - Search query (required)
+- `q` - Search query (optional)
 - `mc_version` - Filter by Minecraft version (optional)
 - `loader` - Filter by mod loader: forge, fabric, neoforge (optional)
-- `skip` - Pagination offset (default: 0)
+- `type` - Filter by project type: mod, modpack, resourcepack, shader, plugin, datapack (optional)
+- `page` - Page number (default: 1)
 - `limit` - Results per page (default: 20, max: 100)
 
 **Response:**
 ```json
-[
-  {
-    "id": 1,
-    "name": "All The Mods 9",
-    "slug": "atm9",
-    "description": "Kitchen sink modpack for 1.20.1",
-    "mc_version": "1.20.1",
-    "loader": "forge",
-    "downloads": 15420
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "All The Mods 9",
+      "slug": "atm9",
+      "description": "Kitchen sink modpack for 1.20.1",
+      "projectType": "MODPACK",
+      "mcVersion": "1.20.1",
+      "loader": "forge",
+      "downloads": 15420
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "pages": 5
   }
-]
+}
 ```
 
-### Get Modpack Details
+### List Projects (Modpacks Endpoint)
+
+```bash
+GET /modpacks?type=<type>&mc_version=<version>&loader=<loader>
+```
+
+**Query Parameters:**
+- `type` - Filter by project type: mod, modpack, resourcepack, shader, plugin, datapack (optional)
+- `mcVersion` - Filter by Minecraft version (optional)
+- `loader` - Filter by mod loader: forge, fabric, neoforge (optional)
+- `page` - Page number (default: 1)
+- `limit` - Results per page (default: 20, max: 100)
+
+**Response:**
+```json
+{
+  "data": [...],
+  "pagination": {...}
+}
+```
+
+### Get Project Details
 
 ```bash
 GET /modpacks/<slug>
@@ -85,15 +126,30 @@ GET /modpacks/<slug>
   "name": "All The Mods 9",
   "slug": "atm9",
   "description": "Kitchen sink modpack for 1.20.1",
-  "mc_version": "1.20.1",
+  "projectType": "MODPACK",
+  "mcVersion": "1.20.1",
   "loader": "forge",
-  "loader_version": "47.2.0",
+  "loaderVersion": "47.2.0",
   "downloads": 15420,
-  "author": "ATM Team",
-  "created_at": "2024-01-15T10:00:00Z",
-  "updated_at": "2024-11-15T14:30:00Z"
+  "author": {
+    "id": 1,
+    "username": "atmteam"
+  },
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-11-15T14:30:00Z"
 }
 ```
+
+### List User Projects
+
+```bash
+GET /projects/<username>?type=<type>
+```
+
+**Query Parameters:**
+- `type` - Filter by project type (optional)
+
+**Response:** Array of project objects.
 
 ### List Versions
 
@@ -109,16 +165,16 @@ GET /modpacks/<slug>/versions?stable_only=true
 [
   {
     "id": 42,
-    "modpack_id": 1,
+    "modpackId": 1,
     "version": "1.2.0",
-    "mc_version": "1.20.1",
+    "mcVersion": "1.20.1",
     "loader": "forge",
-    "loader_version": "47.2.0",
+    "loaderVersion": "47.2.0",
     "changelog": "Added new mods, fixed bugs",
-    "download_url": "/uploads/atm9-1.2.0.mrpack",
-    "file_size": 45678901,
+    "downloadUrl": "/uploads/atm9-1.2.0.mrpack",
+    "fileSize": 45678901,
     "downloads": 823,
-    "is_stable": true
+    "isStable": true
   }
 ]
 ```
@@ -139,7 +195,7 @@ GET /modpacks/<slug>/versions/<version>
 
 **Response:** Single version object.
 
-### Upload Modpack File
+### Upload Project File
 
 ```bash
 POST /upload/modpack/<slug>?version=<version>
@@ -156,11 +212,11 @@ file: <binary .mrpack or .zip file>
   "filename": "atm9-1.2.0.mrpack",
   "size": 45678901,
   "hash": "sha256:abc123...",
-  "download_url": "/uploads/atm9-1.2.0.mrpack"
+  "downloadUrl": "/uploads/atm9-1.2.0.mrpack"
 }
 ```
 
-### Create Modpack
+### Create Project
 
 ```bash
 POST /modpacks
@@ -168,11 +224,33 @@ Authorization: Bearer <token>
 
 {
   "name": "My Custom Pack",
-  "slug": "my-custom-pack",
   "description": "A custom modpack",
-  "mc_version": "1.20.1",
+  "projectType": "MODPACK",
+  "mcVersion": "1.20.1",
   "loader": "forge",
-  "loader_version": "47.2.0"
+  "loaderVersion": "47.2.0"
+}
+```
+
+**Request Body:**
+- `name` - Project name (required)
+- `description` - Project description (optional)
+- `projectType` - Project type: MOD, MODPACK, RESOURCEPACK, SHADER, PLUGIN, DATAPACK (optional, defaults to MODPACK)
+- `mcVersion` - Minecraft version (required)
+- `loader` - Mod loader (required)
+- `loaderVersion` - Loader version (optional)
+- `recommendedRamGb` - Recommended RAM in GB (optional, default: 4)
+
+### Update Project
+
+```bash
+PATCH /modpacks/<slug>
+Authorization: Bearer <token>
+
+{
+  "description": "Updated description",
+  "projectType": "MOD",
+  "isPublished": true
 }
 ```
 
@@ -184,11 +262,11 @@ Authorization: Bearer <token>
 
 {
   "version": "1.0.0",
-  "mc_version": "1.20.1",
+  "mcVersion": "1.20.1",
   "loader": "forge",
-  "loader_version": "47.2.0",
+  "loaderVersion": "47.2.0",
   "changelog": "Initial release",
-  "is_stable": true
+  "isStable": true
 }
 ```
 
@@ -239,17 +317,20 @@ docker-compose up -d
 ```bash
 # Install dependencies
 cd api
-uv sync
+pnpm install
 
 # Set environment variables
 cp .env.example .env
 # Edit .env with your configuration
 
-# Run migrations (if using Alembic)
-# uv run alembic upgrade head
+# Generate Prisma client
+pnpm prisma:generate
+
+# Run migrations
+pnpm prisma:migrate
 
 # Start server
-uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
+pnpm dev
 ```
 
 ### Environment Variables
@@ -259,7 +340,7 @@ uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
 DATABASE_URL=postgresql://user:pass@localhost:5432/chunkhub
 
 # Security
-SECRET_KEY=your-secret-key-change-in-production
+JWT_SECRET=your-secret-key-change-in-production
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # File Upload
@@ -269,13 +350,12 @@ MAX_FILE_SIZE=524288000
 # API
 API_HOST=0.0.0.0
 API_PORT=8000
-DEBUG=False
+NODE_ENV=development
 ```
 
 ## Interactive Documentation
 
-FastAPI provides automatic interactive documentation:
+Fastify provides automatic interactive documentation:
 
 - Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`

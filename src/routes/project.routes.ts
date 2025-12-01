@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
+import { projectTypeEnum } from '../schemas/modpack.schema.js';
 
 interface ProjectParams {
   username: string;
@@ -11,6 +13,7 @@ export async function projectRoutes(server: FastifyInstance) {
     '/projects/:username',
     async (request: FastifyRequest<{ Params: ProjectParams }>, reply: FastifyReply) => {
       const { username } = request.params;
+      const { type } = request.query as { type?: string };
 
       const user = await prisma.user.findUnique({
         where: { username },
@@ -24,11 +27,20 @@ export async function projectRoutes(server: FastifyInstance) {
       const payload = request.user as { sub: number } | undefined;
       const isOwner = payload?.sub === user.id;
 
+      const where: Prisma.ModpackWhereInput = {
+        authorId: user.id,
+        ...(isOwner ? {} : { isPublished: true }),
+      };
+
+      if (type) {
+        const parsed = projectTypeEnum.safeParse(type.toUpperCase());
+        if (parsed.success) {
+          where.projectType = parsed.data;
+        }
+      }
+
       const modpacks = await prisma.modpack.findMany({
-        where: {
-          authorId: user.id,
-          ...(isOwner ? {} : { isPublished: true }),
-        },
+        where,
         include: {
           author: {
             select: {
