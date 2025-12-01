@@ -1,12 +1,15 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { Prisma, ProjectType } from '@prisma/client';
 import { prisma } from '../prisma.js';
+import { projectTypeEnum } from '../schemas/modpack.schema.js';
 
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { q, mcVersion, loader, page = 1, limit = 20 } = request.query as {
+    const { q, mcVersion, loader, type, page = 1, limit = 20 } = request.query as {
       q?: string;
       mcVersion?: string;
       loader?: string;
+      type?: string;
       page?: number;
       limit?: number;
     };
@@ -14,7 +17,7 @@ export async function searchRoutes(server: FastifyInstance) {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { isPublished: true };
+    const where: Prisma.ModpackWhereInput = { isPublished: true };
 
     if (q) {
       where.OR = [
@@ -25,6 +28,12 @@ export async function searchRoutes(server: FastifyInstance) {
 
     if (mcVersion) where.mcVersion = mcVersion;
     if (loader) where.loader = loader;
+    if (type) {
+      const parsed = projectTypeEnum.safeParse(type.toUpperCase());
+      if (parsed.success) {
+        where.projectType = parsed.data as ProjectType;
+      }
+    }
 
     const [modpacks, total] = await Promise.all([
       prisma.modpack.findMany({

@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProjectType {
+  MOD
+  MODPACK
+  RESOURCEPACK
+  SHADER
+  PLUGIN
+  DATAPACK
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   username        String    @unique @db.VarChar(50)
@@ -24,19 +33,20 @@ model User {
 }
 
 model Modpack {
-  id                Int       @id @default(autoincrement())
-  name              String    @db.VarChar(255)
-  slug              String    @unique @db.VarChar(255)
-  description       String?   @db.Text
-  mcVersion         String    @map("mc_version") @db.VarChar(20)
-  loader            String    @db.VarChar(20)
-  loaderVersion     String?   @map("loader_version") @db.VarChar(50)
-  recommendedRamGb  Int       @default(4) @map("recommended_ram_gb")
-  downloads         Int       @default(0)
-  authorId          Int       @map("author_id")
-  isPublished       Boolean   @default(false) @map("is_published")
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  id                Int         @id @default(autoincrement())
+  name              String      @db.VarChar(255)
+  slug              String      @unique @db.VarChar(255)
+  description       String?     @db.Text
+  projectType       ProjectType @default(MODPACK) @map("project_type")
+  mcVersion         String      @map("mc_version") @db.VarChar(20)
+  loader            String      @db.VarChar(20)
+  loaderVersion     String?     @map("loader_version") @db.VarChar(50)
+  recommendedRamGb  Int         @default(4) @map("recommended_ram_gb")
+  downloads         Int         @default(0)
+  authorId          Int         @map("author_id")
+  isPublished       Boolean     @default(false) @map("is_published")
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
   
   author            User      @relation(fields: [authorId], references: [id])
   versions          ModpackVersion[]
@@ -46,6 +56,7 @@ model Modpack {
   @@index([mcVersion])
   @@index([loader])
   @@index([authorId])
+  @@index([projectType])
   @@map("modpacks")
 }
 

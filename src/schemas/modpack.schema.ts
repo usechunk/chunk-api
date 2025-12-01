@@ -1,8 +1,20 @@
 import { z } from 'zod';
 
+export const projectTypeEnum = z.enum([
+  'MOD',
+  'MODPACK',
+  'RESOURCEPACK',
+  'SHADER',
+  'PLUGIN',
+  'DATAPACK',
+]);
+
+export type ProjectType = z.infer<typeof projectTypeEnum>;
+
 export const modpackCreateSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
+  projectType: projectTypeEnum.default('MODPACK'),
   mcVersion: z.string().min(1).max(20),
   loader: z.string().min(1).max(20),
   loaderVersion: z.string().max(50).optional(),
@@ -12,6 +24,7 @@ export const modpackCreateSchema = z.object({
 export const modpackUpdateSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
+  projectType: projectTypeEnum.optional(),
   mcVersion: z.string().min(1).max(20).optional(),
   loader: z.string().min(1).max(20).optional(),
   loaderVersion: z.string().max(50).optional(),
@@ -24,6 +37,7 @@ export const modpackResponseSchema = z.object({
   name: z.string(),
   slug: z.string(),
   description: z.string().nullable(),
+  projectType: projectTypeEnum,
   mcVersion: z.string(),
   loader: z.string(),
   loaderVersion: z.string().nullable(),

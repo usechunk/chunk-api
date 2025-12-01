@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { ProjectType } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
-import { modpackCreateSchema, modpackUpdateSchema } from '../schemas/modpack.schema.js';
+import { modpackCreateSchema, modpackUpdateSchema, projectTypeEnum } from '../schemas/modpack.schema.js';
 
 interface ModpackParams {
   slug: string;
@@ -10,19 +11,31 @@ interface ModpackParams {
 
 export async function modpackRoutes(server: FastifyInstance) {
   server.get('/modpacks', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { page = 1, limit = 20, mcVersion, loader } = request.query as {
+    const { page = 1, limit = 20, mcVersion, loader, type } = request.query as {
       page?: number;
       limit?: number;
       mcVersion?: string;
       loader?: string;
+      type?: string;
     };
 
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { isPublished: true };
+    const where: {
+      isPublished: boolean;
+      mcVersion?: string;
+      loader?: string;
+      projectType?: ProjectType;
+    } = { isPublished: true };
     if (mcVersion) where.mcVersion = mcVersion;
     if (loader) where.loader = loader;
+    if (type) {
+      const parsed = projectTypeEnum.safeParse(type.toUpperCase());
+      if (parsed.success) {
+        where.projectType = parsed.data as ProjectType;
+      }
+    }
 
     const [modpacks, total] = await Promise.all([
       prisma.modpack.findMany({
@@ -111,6 +124,7 @@ export async function modpackRoutes(server: FastifyInstance) {
           name: body.name,
           slug,
           description: body.description,
+          projectType: body.projectType as ProjectType,
           mcVersion: body.mcVersion,
           loader: body.loader,
           loaderVersion: body.loaderVersion,
@@ -151,12 +165,23 @@ export async function modpackRoutes(server: FastifyInstance) {
         throw new AppError(403, 'Not authorized to update this modpack');
       }
 
-      const updateData: any = {};
+      const updateData: {
+        name?: string;
+        slug?: string;
+        description?: string;
+        projectType?: ProjectType;
+        mcVersion?: string;
+        loader?: string;
+        loaderVersion?: string;
+        recommendedRamGb?: number;
+        isPublished?: boolean;
+      } = {};
       if (body.name) {
         updateData.name = body.name;
         updateData.slug = generateSlug(body.name);
       }
       if (body.description !== undefined) updateData.description = body.description;
+      if (body.projectType) updateData.projectType = body.projectType as ProjectType;
       if (body.mcVersion) updateData.mcVersion = body.mcVersion;
       if (body.loader) updateData.loader = body.loader;
       if (body.loaderVersion !== undefined) updateData.loaderVersion = body.loaderVersion;
