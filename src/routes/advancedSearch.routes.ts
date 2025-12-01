@@ -102,7 +102,10 @@ export async function advancedSearchRoutes(server: FastifyInstance) {
       return reply.send({ suggestions });
     } catch (error) {
       server.log.error(error, 'Search suggestions failed');
-      return reply.send({ suggestions: [] });
+      return reply.code(503).send({
+        error: 'Service Unavailable',
+        message: 'Suggestion service is temporarily unavailable',
+      });
     }
   });
 
