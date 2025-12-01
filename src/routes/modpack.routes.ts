@@ -21,8 +21,12 @@ export async function modpackRoutes(server: FastifyInstance) {
       tags?: string;
     };
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    // Validate pagination parameters with reasonable limits
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+
+    const skip = (pageNum - 1) * limitNum;
+    const take = limitNum;
 
     const where: Prisma.ModpackWhereInput = { isPublished: true };
     if (mcVersion) where.mcVersion = mcVersion;
@@ -80,10 +84,10 @@ export async function modpackRoutes(server: FastifyInstance) {
     return reply.send({
       data: transformedModpacks,
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
+        page: pageNum,
+        limit: limitNum,
         total,
-        pages: Math.ceil(total / Number(limit)),
+        pages: Math.ceil(total / limitNum),
       },
     });
   });
