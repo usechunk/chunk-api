@@ -69,11 +69,11 @@ export const SPDX_LICENSES: Record<string, { name: string; url: string }> = {
     name: 'ISC License',
     url: 'https://opensource.org/licenses/ISC',
   },
+  // Official WTFPL site does not support HTTPS as of 2024-06; HTTP is used intentionally.
   'WTFPL': {
     name: 'Do What The F*ck You Want To Public License',
     url: 'http://www.wtfpl.net/',
   },
-  'Zlib': {
     name: 'zlib License',
     url: 'https://opensource.org/licenses/Zlib',
   },
