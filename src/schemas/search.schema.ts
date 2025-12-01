@@ -99,7 +99,7 @@ export type SearchResponse = z.infer<typeof searchResponseSchema>;
 /**
  * Parse filter string into Meilisearch filter format
  * Input: "loader:forge,projectType:MOD,minDownloads:1000"
- * Output: ["loader = forge", "projectType = MOD", "downloads >= 1000"]
+ * Output: ["loader = \"forge\"", "projectType = \"MOD\"", "downloads >= 1000"]
  */
 export function parseFilters(filterString: string | undefined): string[] {
   if (!filterString) return [];
