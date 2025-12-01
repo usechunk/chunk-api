@@ -16,6 +16,13 @@ enum ProjectType {
   DATAPACK
 }
 
+enum TagType {
+  LOADER
+  CATEGORY
+  GAME_VERSION
+  CUSTOM
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   username        String    @unique @db.VarChar(50)
@@ -50,6 +57,7 @@ model Modpack {
   
   author            User      @relation(fields: [authorId], references: [id])
   versions          ModpackVersion[]
+  tags              ProjectTag[]
 
   @@index([name])
   @@index([slug])
@@ -78,4 +86,34 @@ model ModpackVersion {
 
   @@index([modpackId])
   @@map("modpack_versions")
+}
+
+model Tag {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique @db.VarChar(100)
+  slug      String       @unique @db.VarChar(100)
+  type      TagType
+  color     String?      @db.VarChar(7)
+  icon      String?      @db.VarChar(255)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+  
+  projects  ProjectTag[]
+
+  @@index([type])
+  @@index([slug])
+  @@map("tags")
+}
+
+model ProjectTag {
+  projectId Int      @map("project_id")
+  tagId     Int      @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  
+  project   Modpack  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+  @@index([projectId])
+  @@index([tagId])
+  @@map("project_tags")
 }
