@@ -67,6 +67,7 @@ model Modpack {
   @@index([loader])
   @@index([authorId])
   @@index([projectType])
+  @@index([licenseId])
   @@map("modpacks")
 }
 

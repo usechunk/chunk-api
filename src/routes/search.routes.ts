@@ -44,17 +44,16 @@ export async function searchRoutes(server: FastifyInstance) {
       }
     }
 
-    // Filter by specific license
-    if (license) {
-      where.licenseId = license;
-    }
-
     // Filter by license category (permissive, copyleft, etc.)
+    // Note: licenseCategory takes precedence over license if both are provided
     if (licenseCategory) {
       const licensesInCategory = getLicensesByCategory(licenseCategory);
       if (licensesInCategory.length > 0) {
         where.licenseId = { in: licensesInCategory };
       }
+    } else if (license) {
+      // Filter by specific license (only if licenseCategory is not provided)
+      where.licenseId = license;
     }
 
     // Filter by tags (comma-separated slugs)

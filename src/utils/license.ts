@@ -74,6 +74,7 @@ export const SPDX_LICENSES: Record<string, { name: string; url: string }> = {
     name: 'Do What The F*ck You Want To Public License',
     url: 'http://www.wtfpl.net/',
   },
+  'Zlib': {
     name: 'zlib License',
     url: 'https://opensource.org/licenses/Zlib',
   },
@@ -177,6 +178,6 @@ export function addLicenseInfo<T extends { licenseId: string | null; licenseUrl:
   return {
     ...modpack,
     licenseName: licenseDetails?.name ?? null,
-    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
+    licenseUrl: modpack.licenseUrl ?? licenseDetails?.url ?? null,
   };
 }
