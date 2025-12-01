@@ -4,21 +4,38 @@ import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
 import { parseTagSlugs } from '../utils/tags.js';
+import { getLicenseDetails, getLicensesByCategory } from '../utils/license.js';
 import { modpackCreateSchema, modpackUpdateSchema, projectTypeEnum } from '../schemas/modpack.schema.js';
 
 interface ModpackParams {
   slug: string;
 }
 
+/**
+ * Transform modpack to include license info
+ */
+function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
+  modpack: T
+): T & { licenseName: string | null } {
+  const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
+  return {
+    ...modpack,
+    licenseName: licenseDetails?.name ?? null,
+    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
+  };
+}
+
 export async function modpackRoutes(server: FastifyInstance) {
   server.get('/modpacks', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { page = 1, limit = 20, mcVersion, loader, type, tags } = request.query as {
+    const { page = 1, limit = 20, mcVersion, loader, type, tags, license, licenseCategory } = request.query as {
       page?: number;
       limit?: number;
       mcVersion?: string;
       loader?: string;
       type?: string;
       tags?: string;
+      license?: string;
+      licenseCategory?: string;
     };
 
     // Validate pagination parameters with reasonable limits
@@ -35,6 +52,19 @@ export async function modpackRoutes(server: FastifyInstance) {
       const parsed = projectTypeEnum.safeParse(type.toUpperCase());
       if (parsed.success) {
         where.projectType = parsed.data;
+      }
+    }
+
+    // Filter by specific license
+    if (license) {
+      where.licenseId = license;
+    }
+
+    // Filter by license category (permissive, copyleft, etc.)
+    if (licenseCategory) {
+      const licensesInCategory = getLicensesByCategory(licenseCategory);
+      if (licensesInCategory.length > 0) {
+        where.licenseId = { in: licensesInCategory };
       }
     }
 
@@ -75,11 +105,13 @@ export async function modpackRoutes(server: FastifyInstance) {
       prisma.modpack.count({ where }),
     ]);
 
-    // Transform tags to flat array
-    const transformedModpacks = modpacks.map((modpack) => ({
-      ...modpack,
-      tags: modpack.tags.map((pt) => pt.tag),
-    }));
+    // Transform tags to flat array and add license info
+    const transformedModpacks = modpacks.map((modpack) => 
+      addLicenseInfo({
+        ...modpack,
+        tags: modpack.tags.map((pt) => pt.tag),
+      })
+    );
 
     return reply.send({
       data: transformedModpacks,
@@ -129,11 +161,11 @@ export async function modpackRoutes(server: FastifyInstance) {
         }
       }
 
-      // Transform tags to flat array
-      const transformedModpack = {
+      // Transform tags to flat array and add license info
+      const transformedModpack = addLicenseInfo({
         ...modpack,
         tags: modpack.tags.map((pt) => pt.tag),
-      };
+      });
 
       return reply.send(transformedModpack);
     }
@@ -166,6 +198,8 @@ export async function modpackRoutes(server: FastifyInstance) {
           loader: body.loader,
           loaderVersion: body.loaderVersion,
           recommendedRamGb: body.recommendedRamGb,
+          licenseId: body.licenseId,
+          licenseUrl: body.licenseUrl,
           authorId: payload.sub,
         },
         include: {
@@ -178,7 +212,7 @@ export async function modpackRoutes(server: FastifyInstance) {
         },
       });
 
-      return reply.code(201).send(modpack);
+      return reply.code(201).send(addLicenseInfo(modpack));
     }
   );
 
@@ -214,6 +248,8 @@ export async function modpackRoutes(server: FastifyInstance) {
       if (body.loaderVersion !== undefined) updateData.loaderVersion = body.loaderVersion;
       if (body.recommendedRamGb) updateData.recommendedRamGb = body.recommendedRamGb;
       if (body.isPublished !== undefined) updateData.isPublished = body.isPublished;
+      if (body.licenseId !== undefined) updateData.licenseId = body.licenseId;
+      if (body.licenseUrl !== undefined) updateData.licenseUrl = body.licenseUrl;
 
       const updatedModpack = await prisma.modpack.update({
         where: { slug },
@@ -228,7 +264,7 @@ export async function modpackRoutes(server: FastifyInstance) {
         },
       });
 
-      return reply.send(updatedModpack);
+      return reply.send(addLicenseInfo(updatedModpack));
     }
   );
 

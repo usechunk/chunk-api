@@ -3,15 +3,32 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
 import { parseTagSlugs } from '../utils/tags.js';
+import { getLicenseDetails, getLicensesByCategory } from '../utils/license.js';
+
+/**
+ * Transform modpack to include license info
+ */
+function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
+  modpack: T
+): T & { licenseName: string | null } {
+  const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
+  return {
+    ...modpack,
+    licenseName: licenseDetails?.name ?? null,
+    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
+  };
+}
 
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { q, mcVersion, loader, type, tags, page = 1, limit = 20 } = request.query as {
+    const { q, mcVersion, loader, type, tags, license, licenseCategory, page = 1, limit = 20 } = request.query as {
       q?: string;
       mcVersion?: string;
       loader?: string;
       type?: string;
       tags?: string;
+      license?: string;
+      licenseCategory?: string;
       page?: number;
       limit?: number;
     };
@@ -38,6 +55,19 @@ export async function searchRoutes(server: FastifyInstance) {
       const parsed = projectTypeEnum.safeParse(type.toUpperCase());
       if (parsed.success) {
         where.projectType = parsed.data;
+      }
+    }
+
+    // Filter by specific license
+    if (license) {
+      where.licenseId = license;
+    }
+
+    // Filter by license category (permissive, copyleft, etc.)
+    if (licenseCategory) {
+      const licensesInCategory = getLicensesByCategory(licenseCategory);
+      if (licensesInCategory.length > 0) {
+        where.licenseId = { in: licensesInCategory };
       }
     }
 
@@ -79,11 +109,13 @@ export async function searchRoutes(server: FastifyInstance) {
       prisma.modpack.count({ where }),
     ]);
 
-    // Transform tags to flat array
-    const transformedModpacks = modpacks.map((modpack) => ({
-      ...modpack,
-      tags: modpack.tags.map((pt) => pt.tag),
-    }));
+    // Transform tags to flat array and add license info
+    const transformedModpacks = modpacks.map((modpack) => 
+      addLicenseInfo({
+        ...modpack,
+        tags: modpack.tags.map((pt) => pt.tag),
+      })
+    );
 
     return reply.send({
       data: transformedModpacks,

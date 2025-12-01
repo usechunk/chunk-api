@@ -3,9 +3,24 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { AppError } from '../utils/errors.js';
 import { projectTypeEnum } from '../schemas/modpack.schema.js';
+import { getLicenseDetails } from '../utils/license.js';
 
 interface ProjectParams {
   username: string;
+}
+
+/**
+ * Transform modpack to include license info
+ */
+function addLicenseInfo<T extends { licenseId: string | null; licenseUrl: string | null }>(
+  modpack: T
+): T & { licenseName: string | null } {
+  const licenseDetails = modpack.licenseId ? getLicenseDetails(modpack.licenseId) : null;
+  return {
+    ...modpack,
+    licenseName: licenseDetails?.name ?? null,
+    licenseUrl: modpack.licenseUrl || licenseDetails?.url || null,
+  };
 }
 
 export async function projectRoutes(server: FastifyInstance) {
@@ -52,7 +67,10 @@ export async function projectRoutes(server: FastifyInstance) {
         orderBy: { createdAt: 'desc' },
       });
 
-      return reply.send(modpacks);
+      // Add license info to each modpack
+      const transformedModpacks = modpacks.map(addLicenseInfo);
+
+      return reply.send(transformedModpacks);
     }
   );
 }
