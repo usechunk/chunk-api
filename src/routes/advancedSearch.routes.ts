@@ -7,6 +7,7 @@ import {
 } from '../services/meilisearch.js';
 import {
   searchQuerySchema,
+  suggestQuerySchema,
   buildFiltersFromParams,
   parseSort,
 } from '../schemas/search.schema.js';
@@ -67,17 +68,26 @@ export async function advancedSearchRoutes(server: FastifyInstance) {
    * GET /search/suggest?q=query&limit=5
    */
   server.get('/search/suggest', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { q = '', limit = 5 } = request.query as { q?: string; limit?: number };
+    const query = request.query as Record<string, unknown>;
+    const parsed = suggestQuerySchema.safeParse(query);
 
-    const limitNum = Math.min(Math.max(1, Number(limit) || 5), 10);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'Bad Request',
+        message: 'Invalid suggestion parameters',
+        details: parsed.error.flatten().fieldErrors,
+      });
+    }
 
-    if (!q || q.length < 2) {
+    const params = parsed.data;
+
+    if (!params.q || params.q.length < 2) {
       return reply.send({ suggestions: [] });
     }
 
     try {
-      const result = await searchProjects(q, {
-        limit: limitNum,
+      const result = await searchProjects(params.q, {
+        limit: params.limit,
         offset: 0,
       });
 

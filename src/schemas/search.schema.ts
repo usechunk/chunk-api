@@ -45,6 +45,14 @@ export const searchQuerySchema = z.object({
 
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 
+// Search suggestion query parameters schema
+export const suggestQuerySchema = z.object({
+  q: z.string().default(''),
+  limit: z.coerce.number().min(1).max(10).default(5),
+});
+
+export type SuggestQuery = z.infer<typeof suggestQuerySchema>;
+
 // Search response schema
 export const searchHitSchema = z.object({
   id: z.number(),

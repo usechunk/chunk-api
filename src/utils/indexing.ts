@@ -78,6 +78,9 @@ export async function indexProjectById(projectId: number): Promise<void> {
 /**
  * Update a project in the search index
  * Use after updating a project
+ * 
+ * Note: We intentionally query without filtering by isPublished because
+ * we need to check if a project was unpublished to remove it from the index.
  */
 export async function updateProjectInIndex(projectId: number): Promise<void> {
   const modpack = await prisma.modpack.findUnique({

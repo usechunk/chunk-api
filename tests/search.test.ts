@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   searchQuerySchema,
+  suggestQuerySchema,
   parseFilters,
   buildFiltersFromParams,
   parseSort,
@@ -77,6 +78,32 @@ describe('Search Schema', () => {
       expect(result.mcVersion).toBe('1.20.1');
       expect(result.minDownloads).toBe(100);
       expect(result.author).toBe('testuser');
+    });
+  });
+
+  describe('suggestQuerySchema', () => {
+    it('should accept empty query', () => {
+      const result = suggestQuerySchema.parse({});
+      expect(result.q).toBe('');
+      expect(result.limit).toBe(5);
+    });
+
+    it('should accept valid suggest query', () => {
+      const result = suggestQuerySchema.parse({
+        q: 'test',
+        limit: 8,
+      });
+      expect(result.q).toBe('test');
+      expect(result.limit).toBe(8);
+    });
+
+    it('should enforce max limit of 10', () => {
+      expect(() => suggestQuerySchema.parse({ limit: 15 })).toThrow();
+    });
+
+    it('should coerce string limit to number', () => {
+      const result = suggestQuerySchema.parse({ limit: '7' });
+      expect(result.limit).toBe(7);
     });
   });
 

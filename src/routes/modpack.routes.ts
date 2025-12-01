@@ -199,7 +199,7 @@ export async function modpackRoutes(server: FastifyInstance) {
       });
 
       // Index the project in search (async, non-blocking)
-      // Note: Projects are only indexed when published
+      // Note: indexProjectById checks if project is published before indexing
       indexProjectById(modpack.id).catch((err) => {
         server.log.error(err, 'Failed to index project in search');
       });
