@@ -96,12 +96,16 @@ export const tokenResponseSchema = z.object({
 export const revokeRequestSchema = z.object({
   token: z.string(),
   token_type_hint: z.enum(['access_token', 'refresh_token']).optional(),
+  client_id: z.string().optional(),
+  client_secret: z.string().optional(),
 });
 
 // Token Introspection
 export const introspectRequestSchema = z.object({
   token: z.string(),
   token_type_hint: z.enum(['access_token', 'refresh_token']).optional(),
+  client_id: z.string().optional(),
+  client_secret: z.string().optional(),
 });
 
 export const introspectResponseSchema = z.object({

@@ -378,20 +378,17 @@ export async function oauthRoutes(server: FastifyInstance) {
     }
   );
 
-  // Token revocation endpoint - requires client authentication
+  // Token revocation endpoint - supports optional client authentication
   server.post('/oauth/revoke', async (request: FastifyRequest, reply: FastifyReply) => {
     const body = revokeRequestSchema.parse(request.body);
     
     // Validate client credentials if provided
-    const clientId = (request.body as { client_id?: string }).client_id;
-    const clientSecret = (request.body as { client_secret?: string }).client_secret;
-    
-    if (clientId && clientSecret) {
+    if (body.client_id && body.client_secret) {
       const client = await prisma.oAuthClient.findUnique({
-        where: { clientId },
+        where: { clientId: body.client_id },
       });
       
-      if (!client || !verifyToken(clientSecret, client.clientSecret)) {
+      if (!client || !verifyToken(body.client_secret, client.clientSecret)) {
         throw new AppError(401, 'invalid_client');
       }
     }
@@ -422,20 +419,17 @@ export async function oauthRoutes(server: FastifyInstance) {
     return reply.code(200).send({});
   });
 
-  // Token introspection endpoint - requires client authentication
+  // Token introspection endpoint - supports optional client authentication
   server.post('/oauth/introspect', async (request: FastifyRequest, reply: FastifyReply) => {
     const body = introspectRequestSchema.parse(request.body);
     
     // Validate client credentials if provided
-    const clientId = (request.body as { client_id?: string }).client_id;
-    const clientSecret = (request.body as { client_secret?: string }).client_secret;
-    
-    if (clientId && clientSecret) {
+    if (body.client_id && body.client_secret) {
       const client = await prisma.oAuthClient.findUnique({
-        where: { clientId },
+        where: { clientId: body.client_id },
       });
       
-      if (!client || !verifyToken(clientSecret, client.clientSecret)) {
+      if (!client || !verifyToken(body.client_secret, client.clientSecret)) {
         throw new AppError(401, 'invalid_client');
       }
     }
