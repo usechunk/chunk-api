@@ -584,24 +584,41 @@ async function handleRefreshTokenGrant(
     throw new AppError(400, 'invalid_grant');
   }
 
-  // Generate new access token
-  const accessToken = generateAccessToken();
-  const accessTokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_EXPIRES_IN * 1000);
+  // Rotate refresh token: delete old, create new
+  await prisma.refreshToken.delete({ where: { id: storedRefreshToken.id } });
 
-  await prisma.accessToken.create({
-    data: {
-      token: hashToken(accessToken),
-      userId: storedRefreshToken.userId,
-      clientId: client.id,
-      scopes: storedRefreshToken.scopes,
-      expiresAt: accessTokenExpiresAt,
-    },
-  });
+  // Generate new access token and refresh token
+  const accessToken = generateAccessToken();
+  const newRefreshToken = generateRefreshToken();
+  const accessTokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_EXPIRES_IN * 1000);
+  const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN * 1000);
+
+  await Promise.all([
+    prisma.accessToken.create({
+      data: {
+        token: hashToken(accessToken),
+        userId: storedRefreshToken.userId,
+        clientId: client.id,
+        scopes: storedRefreshToken.scopes,
+        expiresAt: accessTokenExpiresAt,
+      },
+    }),
+    prisma.refreshToken.create({
+      data: {
+        token: hashToken(newRefreshToken),
+        userId: storedRefreshToken.userId,
+        clientId: client.id,
+        scopes: storedRefreshToken.scopes,
+        expiresAt: refreshTokenExpiresAt,
+      },
+    }),
+  ]);
 
   return reply.send({
     access_token: accessToken,
     token_type: 'Bearer',
     expires_in: ACCESS_TOKEN_EXPIRES_IN,
+    refresh_token: newRefreshToken,
     scope: storedRefreshToken.scopes.join(' '),
   });
 }
