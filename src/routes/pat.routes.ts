@@ -16,6 +16,9 @@ export async function patRoutes(server: FastifyInstance) {
       const { token, prefix } = generatePersonalAccessToken();
       const expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
 
+      if (expiresAt && expiresAt <= new Date()) {
+        throw new AppError(400, 'Expiration date must be in the future');
+      }
       const pat = await prisma.personalAccessToken.create({
         data: {
           name: body.name,
