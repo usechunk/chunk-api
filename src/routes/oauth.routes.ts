@@ -26,6 +26,18 @@ const ACCESS_TOKEN_EXPIRES_IN = 3600; // 1 hour in seconds
 const REFRESH_TOKEN_EXPIRES_IN = 30 * 24 * 60 * 60; // 30 days in seconds
 const AUTHORIZATION_CODE_EXPIRES_IN = 10 * 60; // 10 minutes in seconds
 
+// Helper to check if a scope is valid
+const validScopesSet = new Set<string>(VALID_SCOPES);
+function isValidScope(scope: string): boolean {
+  return validScopesSet.has(scope);
+}
+
+/**
+ * OAuth2 routes for client registration, authorization, token exchange, and management.
+ * 
+ * Rate limiting: All routes are protected by the global rate limiter registered in plugins/index.ts.
+ * Sensitive endpoints (/oauth/token, /oauth/authorize POST) have additional stricter rate limits.
+ */
 export async function oauthRoutes(server: FastifyInstance) {
   // Register a new OAuth client
   server.post(
@@ -234,7 +246,7 @@ export async function oauthRoutes(server: FastifyInstance) {
       // Parse and validate requested scopes
       const requestedScopes = query.scope ? query.scope.split(' ') : client.scopes;
       const validScopes = requestedScopes.filter((s) => 
-        (VALID_SCOPES as readonly string[]).includes(s) && client.scopes.includes(s)
+        isValidScope(s) && client.scopes.includes(s)
       );
 
       if (validScopes.length === 0) {
@@ -254,10 +266,18 @@ export async function oauthRoutes(server: FastifyInstance) {
     }
   );
 
-  // Authorization endpoint (POST - process consent)
+  // Authorization endpoint (POST - process consent) - with stricter rate limiting for security
   server.post<{ Querystring: Record<string, string> }>(
     '/oauth/authorize',
-    { onRequest: [server.authenticate] },
+    {
+      onRequest: [server.authenticate],
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+        },
+      },
+    },
     async (request: FastifyRequest<{ Querystring: Record<string, string> }>, reply: FastifyReply) => {
       const payload = request.user as { sub: number };
       const body = authorizeConsentSchema.parse(request.body);
@@ -292,7 +312,7 @@ export async function oauthRoutes(server: FastifyInstance) {
       // Parse and validate requested scopes
       const requestedScopes = body.scope ? body.scope.split(' ') : client.scopes;
       const validScopes = requestedScopes.filter((s) =>
-        (VALID_SCOPES as readonly string[]).includes(s) && client.scopes.includes(s)
+        isValidScope(s) && client.scopes.includes(s)
       );
 
       if (validScopes.length === 0) {
@@ -324,20 +344,31 @@ export async function oauthRoutes(server: FastifyInstance) {
     }
   );
 
-  // Token endpoint
-  server.post('/oauth/token', async (request: FastifyRequest, reply: FastifyReply) => {
-    const body = tokenRequestSchema.parse(request.body);
+  // Token endpoint - with stricter rate limiting for security
+  server.post(
+    '/oauth/token',
+    {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const body = tokenRequestSchema.parse(request.body);
 
-    if (body.grant_type === 'authorization_code') {
-      return handleAuthorizationCodeGrant(body, reply);
-    } else if (body.grant_type === 'refresh_token') {
-      return handleRefreshTokenGrant(body, reply);
-    } else if (body.grant_type === 'client_credentials') {
-      return handleClientCredentialsGrant(body, reply);
+      if (body.grant_type === 'authorization_code') {
+        return handleAuthorizationCodeGrant(body, reply);
+      } else if (body.grant_type === 'refresh_token') {
+        return handleRefreshTokenGrant(body, reply);
+      } else if (body.grant_type === 'client_credentials') {
+        return handleClientCredentialsGrant(body, reply);
+      }
+
+      throw new AppError(400, 'unsupported_grant_type');
     }
-
-    throw new AppError(400, 'unsupported_grant_type');
-  });
+  );
 
   // Token revocation endpoint
   server.post('/oauth/revoke', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -539,7 +570,8 @@ async function handleRefreshTokenGrant(
     throw new AppError(400, 'invalid_client');
   }
 
-  // Verify the refresh token belongs to this client
+  // Verify the refresh token belongs to this client (if it was issued to a specific client)
+  // Tokens without a clientId (e.g., from future PAT-to-refresh scenarios) skip this check
   if (storedRefreshToken.clientId && storedRefreshToken.clientId !== client.id) {
     throw new AppError(400, 'invalid_grant');
   }
@@ -587,7 +619,7 @@ async function handleClientCredentialsGrant(
   // Parse and validate requested scopes
   const requestedScopes = body.scope ? body.scope.split(' ') : client.scopes;
   const validScopes = requestedScopes.filter((s) =>
-    (VALID_SCOPES as readonly string[]).includes(s) && client.scopes.includes(s)
+    isValidScope(s) && client.scopes.includes(s)
   );
 
   if (validScopes.length === 0) {
