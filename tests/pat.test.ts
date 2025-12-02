@@ -198,4 +198,71 @@ describe('Personal Access Token Routes', () => {
       expect(response.statusCode).toBe(404);
     });
   });
+
+  describe('PAT Authentication', () => {
+    it('should authenticate using a PAT token', async () => {
+      // Create a PAT
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/user/tokens',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          name: 'Auth Test PAT',
+          scopes: ['project:read', 'user:read'],
+        },
+      });
+
+      expect(createResponse.statusCode).toBe(201);
+      const { token: patToken } = JSON.parse(createResponse.body);
+
+      // Use the PAT to access a protected endpoint
+      const response = await app.inject({
+        method: 'GET',
+        url: '/user/tokens',
+        headers: {
+          authorization: `Bearer ${patToken}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(Array.isArray(body)).toBe(true);
+    });
+
+    it('should reject expired PAT', async () => {
+      // Create a PAT with past expiration
+      const pastDate = new Date();
+      pastDate.setFullYear(pastDate.getFullYear() - 1);
+
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/user/tokens',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          name: 'Expired PAT',
+          scopes: ['project:read'],
+          expiresAt: pastDate.toISOString(),
+        },
+      });
+
+      // Should fail because expiration is in the past
+      expect(createResponse.statusCode).toBe(400);
+    });
+
+    it('should reject invalid PAT token', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/user/tokens',
+        headers: {
+          authorization: 'Bearer chunk_invalidtoken12345',
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, timingSafeEqual } from 'crypto';
 
 /**
  * Generate a cryptographically secure random string
@@ -60,17 +60,13 @@ export function hashToken(token: string): string {
 }
 
 /**
- * Verify a token against its hash
+ * Verify a token against its hash using constant-time comparison
  */
 export function verifyToken(token: string, hash: string): boolean {
   const tokenHash = hashToken(token);
-  // Constant-time comparison to prevent timing attacks
+  // Use Node's built-in constant-time comparison for security
   if (tokenHash.length !== hash.length) {
     return false;
   }
-  let result = 0;
-  for (let i = 0; i < tokenHash.length; i++) {
-    result |= tokenHash.charCodeAt(i) ^ hash.charCodeAt(i);
-  }
-  return result === 0;
+  return timingSafeEqual(Buffer.from(tokenHash), Buffer.from(hash));
 }

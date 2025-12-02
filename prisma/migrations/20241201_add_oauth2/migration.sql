@@ -137,11 +137,23 @@ ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_client_id_fkey" FORE
 -- Add index for refresh_tokens.client_id
 CREATE INDEX "refresh_tokens_client_id_idx" ON "refresh_tokens"("client_id");
 -- AddForeignKey
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "oauth_clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateIndex
+CREATE INDEX "refresh_tokens_client_id_idx" ON "refresh_tokens"("client_id");
+
+-- AddForeignKey
 ALTER TABLE "authorization_codes" ADD CONSTRAINT "authorization_codes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Add missing foreign key for authorization_codes.client_id
 ALTER TABLE "authorization_codes" ADD CONSTRAINT "authorization_codes_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "oauth_clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 -- Add index for authorization_codes.client_id
 CREATE INDEX "authorization_codes_client_id_idx" ON "authorization_codes"("client_id");
+-- AddForeignKey
+ALTER TABLE "authorization_codes" ADD CONSTRAINT "authorization_codes_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "oauth_clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateIndex
+CREATE INDEX "authorization_codes_client_id_idx" ON "authorization_codes"("client_id");
+
 -- AddForeignKey
 ALTER TABLE "personal_access_tokens" ADD CONSTRAINT "personal_access_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

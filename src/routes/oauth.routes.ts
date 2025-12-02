@@ -378,9 +378,24 @@ export async function oauthRoutes(server: FastifyInstance) {
     }
   );
 
-  // Token revocation endpoint
+  // Token revocation endpoint - requires client authentication
   server.post('/oauth/revoke', async (request: FastifyRequest, reply: FastifyReply) => {
     const body = revokeRequestSchema.parse(request.body);
+    
+    // Validate client credentials if provided
+    const clientId = (request.body as { client_id?: string }).client_id;
+    const clientSecret = (request.body as { client_secret?: string }).client_secret;
+    
+    if (clientId && clientSecret) {
+      const client = await prisma.oAuthClient.findUnique({
+        where: { clientId },
+      });
+      
+      if (!client || !verifyToken(clientSecret, client.clientSecret)) {
+        throw new AppError(401, 'invalid_client');
+      }
+    }
+    
     const tokenHash = hashToken(body.token);
 
     // Try to revoke as access token
@@ -407,9 +422,24 @@ export async function oauthRoutes(server: FastifyInstance) {
     return reply.code(200).send({});
   });
 
-  // Token introspection endpoint
+  // Token introspection endpoint - requires client authentication
   server.post('/oauth/introspect', async (request: FastifyRequest, reply: FastifyReply) => {
     const body = introspectRequestSchema.parse(request.body);
+    
+    // Validate client credentials if provided
+    const clientId = (request.body as { client_id?: string }).client_id;
+    const clientSecret = (request.body as { client_secret?: string }).client_secret;
+    
+    if (clientId && clientSecret) {
+      const client = await prisma.oAuthClient.findUnique({
+        where: { clientId },
+      });
+      
+      if (!client || !verifyToken(clientSecret, client.clientSecret)) {
+        throw new AppError(401, 'invalid_client');
+      }
+    }
+    
     const tokenHash = hashToken(body.token);
 
     // Check access tokens
@@ -503,17 +533,15 @@ async function handleAuthorizationCodeGrant(
     throw new AppError(400, 'invalid_client');
   }
 
-  // Delete the authorization code (one-time use)
-  await prisma.authorizationCode.delete({ where: { id: authCode.id } });
-
   // Generate tokens
   const accessToken = generateAccessToken();
   const refreshToken = generateRefreshToken();
   const accessTokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_EXPIRES_IN * 1000);
   const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN * 1000);
 
-  // Store tokens
-  await Promise.all([
+  // Delete authorization code and create tokens atomically using transaction
+  await prisma.$transaction([
+    prisma.authorizationCode.delete({ where: { id: authCode.id } }),
     prisma.accessToken.create({
       data: {
         token: hashToken(accessToken),

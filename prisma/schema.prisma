@@ -138,8 +138,10 @@ model OAuthClient {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
   
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessTokens  AccessToken[]
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessTokens       AccessToken[]
+  refreshTokens      RefreshToken[]
+  authorizationCodes AuthorizationCode[]
 
   @@index([clientId])
   @@index([userId])
@@ -174,9 +176,11 @@ model RefreshToken {
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        OAuthClient? @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([userId])
+  @@index([clientId])
   @@map("refresh_tokens")
 }
 
@@ -191,9 +195,11 @@ model AuthorizationCode {
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([code])
   @@index([userId])
+  @@index([clientId])
   @@map("authorization_codes")
 }
 

@@ -5,6 +5,7 @@ declare module '@fastify/jwt' {
     user: {
       sub: number;
       username: string;
+      scopes?: string[];
     };
   }
 }

@@ -230,4 +230,240 @@ describe('OAuth Routes', () => {
       expect(body.active).toBe(false);
     });
   });
+
+  describe('OAuth Authorization Flow', () => {
+    let testClientId: string;
+    let testClientSecret: string;
+    let testClientDbId: string;
+
+    beforeEach(async () => {
+      // Create a test client
+      const response = await app.inject({
+        method: 'POST',
+        url: '/oauth/register',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          name: 'Flow Test Client',
+          redirectUris: ['https://example.com/callback'],
+          scopes: ['project:read', 'user:read'],
+        },
+      });
+      const body = JSON.parse(response.body);
+      testClientId = body.clientId;
+      testClientSecret = body.clientSecret;
+      testClientDbId = body.id;
+    });
+
+    it('should get authorization info', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/oauth/authorize?response_type=code&client_id=${testClientId}&redirect_uri=https://example.com/callback&scope=project:read`,
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.client.name).toBe('Flow Test Client');
+      expect(body.scopes).toContain('project:read');
+    });
+
+    it('should reject invalid redirect_uri', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/oauth/authorize?response_type=code&client_id=${testClientId}&redirect_uri=https://evil.com/callback&scope=project:read`,
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should process consent and return authorization code', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/oauth/authorize',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          client_id: testClientId,
+          redirect_uri: 'https://example.com/callback',
+          scope: 'project:read user:read',
+          consent: 'allow',
+          state: 'teststate123',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.redirect_uri).toContain('code=');
+      expect(body.redirect_uri).toContain('state=teststate123');
+    });
+
+    it('should handle consent denial', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/oauth/authorize',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          client_id: testClientId,
+          redirect_uri: 'https://example.com/callback',
+          consent: 'deny',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.redirect_uri).toContain('error=access_denied');
+    });
+
+    it('should exchange authorization code for tokens', async () => {
+      // First, get an authorization code
+      const authResponse = await app.inject({
+        method: 'POST',
+        url: '/oauth/authorize',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          client_id: testClientId,
+          redirect_uri: 'https://example.com/callback',
+          scope: 'project:read',
+          consent: 'allow',
+        },
+      });
+
+      const authBody = JSON.parse(authResponse.body);
+      const redirectUrl = new URL(authBody.redirect_uri);
+      const code = redirectUrl.searchParams.get('code');
+
+      expect(code).toBeDefined();
+
+      // Exchange code for tokens
+      const tokenResponse = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: 'https://example.com/callback',
+          client_id: testClientId,
+          client_secret: testClientSecret,
+        },
+      });
+
+      expect(tokenResponse.statusCode).toBe(200);
+      const tokenBody = JSON.parse(tokenResponse.body);
+      expect(tokenBody.access_token).toBeDefined();
+      expect(tokenBody.refresh_token).toBeDefined();
+      expect(tokenBody.token_type).toBe('Bearer');
+      expect(tokenBody.expires_in).toBe(3600);
+    });
+
+    it('should reject invalid authorization code', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'authorization_code',
+          code: 'invalid-code',
+          redirect_uri: 'https://example.com/callback',
+          client_id: testClientId,
+          client_secret: testClientSecret,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should use client_credentials grant', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'client_credentials',
+          client_id: testClientId,
+          client_secret: testClientSecret,
+          scope: 'project:read',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.access_token).toBeDefined();
+      expect(body.token_type).toBe('Bearer');
+    });
+
+    it('should refresh tokens with rotation', async () => {
+      // First get tokens via client_credentials
+      const tokenResponse = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'client_credentials',
+          client_id: testClientId,
+          client_secret: testClientSecret,
+        },
+      });
+
+      // Get an authorization code and exchange for refresh token
+      const authResponse = await app.inject({
+        method: 'POST',
+        url: '/oauth/authorize',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+        },
+        payload: {
+          client_id: testClientId,
+          redirect_uri: 'https://example.com/callback',
+          consent: 'allow',
+        },
+      });
+
+      const authBody = JSON.parse(authResponse.body);
+      const redirectUrl = new URL(authBody.redirect_uri);
+      const code = redirectUrl.searchParams.get('code');
+
+      const initialTokenResponse = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: 'https://example.com/callback',
+          client_id: testClientId,
+          client_secret: testClientSecret,
+        },
+      });
+
+      const initialBody = JSON.parse(initialTokenResponse.body);
+      const refreshToken = initialBody.refresh_token;
+
+      // Now refresh the token
+      const refreshResponse = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_id: testClientId,
+          client_secret: testClientSecret,
+        },
+      });
+
+      expect(refreshResponse.statusCode).toBe(200);
+      const refreshBody = JSON.parse(refreshResponse.body);
+      expect(refreshBody.access_token).toBeDefined();
+      expect(refreshBody.refresh_token).toBeDefined();
+      // New refresh token should be different (rotation)
+      expect(refreshBody.refresh_token).not.toBe(refreshToken);
+    });
+  });
 });
