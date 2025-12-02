@@ -220,7 +220,15 @@ export async function oauthRoutes(server: FastifyInstance) {
   // Authorization endpoint (GET - shows authorization screen info)
   server.get<{ Querystring: Record<string, string> }>(
     '/oauth/authorize',
-    { onRequest: [server.authenticate] },
+    {
+      onRequest: [server.authenticate],
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+        },
+      },
+    },
     async (request: FastifyRequest<{ Querystring: Record<string, string> }>, reply: FastifyReply) => {
       const query = authorizeRequestSchema.parse(request.query);
 
