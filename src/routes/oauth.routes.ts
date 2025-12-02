@@ -379,45 +379,56 @@ export async function oauthRoutes(server: FastifyInstance) {
   );
 
   // Token revocation endpoint - supports optional client authentication
-  server.post('/oauth/revoke', async (request: FastifyRequest, reply: FastifyReply) => {
-    const body = revokeRequestSchema.parse(request.body);
-    
-    // Validate client credentials if provided
-    if (body.client_id && body.client_secret) {
-      const client = await prisma.oAuthClient.findUnique({
-        where: { clientId: body.client_id },
-      });
+  server.post(
+    '/oauth/revoke',
+    {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const body = revokeRequestSchema.parse(request.body);
       
-      if (!client || !verifyToken(body.client_secret, client.clientSecret)) {
-        throw new AppError(401, 'invalid_client');
+      // Validate client credentials if provided
+      if (body.client_id && body.client_secret) {
+        const client = await prisma.oAuthClient.findUnique({
+          where: { clientId: body.client_id },
+        });
+        
+        if (!client || !verifyToken(body.client_secret, client.clientSecret)) {
+          throw new AppError(401, 'invalid_client');
+        }
       }
-    }
-    
-    const tokenHash = hashToken(body.token);
+      
+      const tokenHash = hashToken(body.token);
 
-    // Try to revoke as access token
-    const accessToken = await prisma.accessToken.findUnique({
-      where: { token: tokenHash },
-    });
+      // Try to revoke as access token
+      const accessToken = await prisma.accessToken.findUnique({
+        where: { token: tokenHash },
+      });
 
-    if (accessToken) {
-      await prisma.accessToken.delete({ where: { id: accessToken.id } });
+      if (accessToken) {
+        await prisma.accessToken.delete({ where: { id: accessToken.id } });
+        return reply.code(200).send({});
+      }
+
+      // Try to revoke as refresh token
+      const refreshToken = await prisma.refreshToken.findUnique({
+        where: { token: tokenHash },
+      });
+
+      if (refreshToken) {
+        await prisma.refreshToken.delete({ where: { id: refreshToken.id } });
+        return reply.code(200).send({});
+      }
+
+      // Per RFC 7009, we return 200 even if token doesn't exist
       return reply.code(200).send({});
     }
-
-    // Try to revoke as refresh token
-    const refreshToken = await prisma.refreshToken.findUnique({
-      where: { token: tokenHash },
-    });
-
-    if (refreshToken) {
-      await prisma.refreshToken.delete({ where: { id: refreshToken.id } });
-      return reply.code(200).send({});
-    }
-
-    // Per RFC 7009, we return 200 even if token doesn't exist
-    return reply.code(200).send({});
-  });
+  );
 
   // Token introspection endpoint - supports optional client authentication
   server.post('/oauth/introspect', async (request: FastifyRequest, reply: FastifyReply) => {
