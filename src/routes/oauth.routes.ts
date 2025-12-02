@@ -431,19 +431,29 @@ export async function oauthRoutes(server: FastifyInstance) {
   );
 
   // Token introspection endpoint - supports optional client authentication
-  server.post('/oauth/introspect', async (request: FastifyRequest, reply: FastifyReply) => {
-    const body = introspectRequestSchema.parse(request.body);
-    
-    // Validate client credentials if provided
-    if (body.client_id && body.client_secret) {
-      const client = await prisma.oAuthClient.findUnique({
-        where: { clientId: body.client_id },
-      });
+  server.post(
+    '/oauth/introspect',
+    {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const body = introspectRequestSchema.parse(request.body);
       
-      if (!client || !verifyToken(body.client_secret, client.clientSecret)) {
-        throw new AppError(401, 'invalid_client');
+      // Validate client credentials if provided
+      if (body.client_id && body.client_secret) {
+        const client = await prisma.oAuthClient.findUnique({
+          where: { clientId: body.client_id },
+        });
+        
+        if (!client || !verifyToken(body.client_secret, client.clientSecret)) {
+          throw new AppError(401, 'invalid_client');
+        }
       }
-    }
     
     const tokenHash = hashToken(body.token);
 
