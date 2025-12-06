@@ -85,11 +85,13 @@ export async function registerPlugins(server: FastifyInstance) {
           return;
         }
 
-        // Update lastUsedAt
-        await prisma.personalAccessToken.update({
-          where: { id: pat.id },
-          data: { lastUsedAt: new Date() },
-        });
+        // Throttle and fire-and-forget lastUsedAt update (only if null or >1h old)
+        if (!pat.lastUsedAt || (Date.now() - new Date(pat.lastUsedAt).getTime()) > 3600000) {
+          prisma.personalAccessToken.update({
+            where: { id: pat.id },
+            data: { lastUsedAt: new Date() },
+          }).catch(() => {});
+        }
 
         // Set user payload similar to JWT
         request.user = { sub: pat.user.id, username: pat.user.username, scopes: pat.scopes };
@@ -105,6 +107,7 @@ export async function registerPlugins(server: FastifyInstance) {
       await request.jwtVerify();
     } catch {
       reply.code(401).send({ error: 'Unauthorized', message: 'Invalid or missing token' });
+      return;
     }
   });
 }

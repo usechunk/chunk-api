@@ -141,30 +141,29 @@ export async function oauthRoutes(server: FastifyInstance) {
       const { id } = request.params;
       const body = oauthClientUpdateSchema.parse(request.body);
 
-      const client = await prisma.oAuthClient.findFirst({
-        where: { id, userId: payload.sub },
-      });
+      try {
+        const updatedClient = await prisma.oAuthClient.update({
+          where: { id, userId: payload.sub },
+          data: body,
+          select: {
+            id: true,
+            clientId: true,
+            name: true,
+            description: true,
+            redirectUris: true,
+            scopes: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
 
-      if (!client) {
-        throw new AppError(404, 'OAuth client not found');
+        return reply.send(updatedClient);
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+          throw new AppError(404, 'OAuth client not found');
+        }
+        throw error;
       }
-
-      const updatedClient = await prisma.oAuthClient.update({
-        where: { id },
-        data: body,
-        select: {
-          id: true,
-          clientId: true,
-          name: true,
-          description: true,
-          redirectUris: true,
-          scopes: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-
-      return reply.send(updatedClient);
     }
   );
 
@@ -176,17 +175,17 @@ export async function oauthRoutes(server: FastifyInstance) {
       const payload = request.user as { sub: number };
       const { id } = request.params;
 
-      const client = await prisma.oAuthClient.findFirst({
-        where: { id, userId: payload.sub },
-      });
-
-      if (!client) {
-        throw new AppError(404, 'OAuth client not found');
+      try {
+        await prisma.oAuthClient.delete({
+          where: { id, userId: payload.sub },
+        });
+        return reply.code(204).send();
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+          throw new AppError(404, 'OAuth client not found');
+        }
+        throw error;
       }
-
-      await prisma.oAuthClient.delete({ where: { id } });
-
-      return reply.code(204).send();
     }
   );
 
@@ -454,58 +453,59 @@ export async function oauthRoutes(server: FastifyInstance) {
           throw new AppError(401, 'invalid_client');
         }
       }
-    
-    const tokenHash = hashToken(body.token);
 
-    // Check access tokens
-    const accessToken = await prisma.accessToken.findUnique({
-      where: { token: tokenHash },
-      include: {
-        user: { select: { username: true } },
-        client: { select: { clientId: true } },
-      },
-    });
+      const tokenHash = hashToken(body.token);
 
-    if (accessToken) {
-      const now = new Date();
-      const isActive = accessToken.expiresAt > now;
-
-      return reply.send({
-        active: isActive,
-        scope: accessToken.scopes.join(' '),
-        client_id: accessToken.client?.clientId,
-        username: accessToken.user.username,
-        token_type: 'Bearer',
-        exp: Math.floor(accessToken.expiresAt.getTime() / 1000),
-        iat: Math.floor(accessToken.createdAt.getTime() / 1000),
-        sub: String(accessToken.userId),
+      // Check access tokens
+      const accessToken = await prisma.accessToken.findUnique({
+        where: { token: tokenHash },
+        include: {
+          user: { select: { username: true } },
+          client: { select: { clientId: true } },
+        },
       });
-    }
 
-    // Check refresh tokens
-    const refreshToken = await prisma.refreshToken.findUnique({
-      where: { token: tokenHash },
-      include: { user: { select: { username: true } } },
-    });
+      if (accessToken) {
+        const now = new Date();
+        const isActive = accessToken.expiresAt > now;
 
-    if (refreshToken) {
-      const now = new Date();
-      const isActive = refreshToken.expiresAt > now;
+        return reply.send({
+          active: isActive,
+          scope: accessToken.scopes.join(' '),
+          client_id: accessToken.client?.clientId,
+          username: accessToken.user.username,
+          token_type: 'Bearer',
+          exp: Math.floor(accessToken.expiresAt.getTime() / 1000),
+          iat: Math.floor(accessToken.createdAt.getTime() / 1000),
+          sub: String(accessToken.userId),
+        });
+      }
 
-      return reply.send({
-        active: isActive,
-        scope: refreshToken.scopes.join(' '),
-        username: refreshToken.user.username,
-        token_type: 'refresh_token',
-        exp: Math.floor(refreshToken.expiresAt.getTime() / 1000),
-        iat: Math.floor(refreshToken.createdAt.getTime() / 1000),
-        sub: String(refreshToken.userId),
+      // Check refresh tokens
+      const refreshToken = await prisma.refreshToken.findUnique({
+        where: { token: tokenHash },
+        include: { user: { select: { username: true } } },
       });
-    }
 
-    // Token not found
-    return reply.send({ active: false });
-  });
+      if (refreshToken) {
+        const now = new Date();
+        const isActive = refreshToken.expiresAt > now;
+
+        return reply.send({
+          active: isActive,
+          scope: refreshToken.scopes.join(' '),
+          username: refreshToken.user.username,
+          token_type: 'refresh_token',
+          exp: Math.floor(refreshToken.expiresAt.getTime() / 1000),
+          iat: Math.floor(refreshToken.createdAt.getTime() / 1000),
+          sub: String(refreshToken.userId),
+        });
+      }
+
+      // Token not found
+      return reply.send({ active: false });
+    }
+  );
 }
 
 async function handleAuthorizationCodeGrant(
@@ -627,16 +627,15 @@ async function handleRefreshTokenGrant(
     throw new AppError(400, 'invalid_grant');
   }
 
-  // Rotate refresh token: delete old, create new
-  await prisma.refreshToken.delete({ where: { id: storedRefreshToken.id } });
-
   // Generate new access token and refresh token
   const accessToken = generateAccessToken();
   const newRefreshToken = generateRefreshToken();
   const accessTokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_EXPIRES_IN * 1000);
   const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN * 1000);
 
-  await Promise.all([
+  // Rotate refresh token atomically: delete old and create new tokens in a transaction
+  await prisma.$transaction([
+    prisma.refreshToken.delete({ where: { id: storedRefreshToken.id } }),
     prisma.accessToken.create({
       data: {
         token: hashToken(accessToken),

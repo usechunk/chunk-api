@@ -402,17 +402,6 @@ describe('OAuth Routes', () => {
     });
 
     it('should refresh tokens with rotation', async () => {
-      // First get tokens via client_credentials
-      const tokenResponse = await app.inject({
-        method: 'POST',
-        url: '/oauth/token',
-        payload: {
-          grant_type: 'client_credentials',
-          client_id: testClientId,
-          client_secret: testClientSecret,
-        },
-      });
-
       // Get an authorization code and exchange for refresh token
       const authResponse = await app.inject({
         method: 'POST',

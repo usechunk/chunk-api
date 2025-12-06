@@ -106,17 +106,17 @@ export async function patRoutes(server: FastifyInstance) {
       const payload = request.user as { sub: number };
       const { id } = request.params;
 
-      const token = await prisma.personalAccessToken.findFirst({
-        where: { id, userId: payload.sub },
-      });
-
-      if (!token) {
-        throw new AppError(404, 'Personal access token not found');
+      try {
+        await prisma.personalAccessToken.delete({
+          where: { id, userId: payload.sub },
+        });
+        return reply.code(204).send();
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+          throw new AppError(404, 'Personal access token not found');
+        }
+        throw error;
       }
-
-      await prisma.personalAccessToken.delete({ where: { id } });
-
-      return reply.code(204).send();
     }
   );
 }
