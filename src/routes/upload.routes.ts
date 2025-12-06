@@ -18,12 +18,10 @@ export async function uploadRoutes(server: FastifyInstance) {
       }
 
       const allowedMimeTypes = [
-        'application/zip',
-        'application/x-zip-compressed',
-        'application/json',
         'image/png',
         'image/jpeg',
         'image/webp',
+        'image/gif',
       ];
 
       if (!allowedMimeTypes.includes(data.mimetype)) {

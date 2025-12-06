@@ -123,7 +123,7 @@ tests/               # Test files
 - JWT authentication
 - Rate limiting (100 req/min)
 - Password hashing (bcrypt)
-- File uploads
+- Image uploads (icons/thumbnails for metadata)
 - CORS support
 - Input validation
 - Type-safe database queries
